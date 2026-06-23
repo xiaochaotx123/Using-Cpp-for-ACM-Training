@@ -1,0 +1,161 @@
+void solve(){
+    
+    int n; cin >> n;
+    int Max = -1, Min = 10;
+    for(int i = 1; i <= n; i ++){
+        int x; cin >> x;
+        Max = max(Max, x);
+        Min = min(Min, x);
+    }
+    cout << Max - Min + 1 << endl;
+    return ;
+}
+
+void solve(){
+    
+    int n, m; cin >> n >> m;
+    vector<int> a(n + 10);
+    for(int i = 1; i <= n; i ++){
+        char sh; cin >> sh;
+        if(sh == '1') a[i] = 1;
+        else a[i] = 0;
+    }
+
+    for(int i = 1; i <= n - m; i ++){
+        if(a[i] == 1){
+            a[i] = 0;
+            if(a[i + m] == 0) a[i + m] = 1;
+            else a[i + m] = 0;
+        }
+    }
+    for(int i = 1; i <= n; i ++){
+        if(a[i]){
+            cout << "NO" << endl;
+            return ;
+        }
+    }
+    cout << "YES" << endl;
+    return ;
+}
+
+void solve(){
+        
+    int a, b, x; cin >> a >> b >> x;
+    int ans =  abs(a - b);
+    for(int i = 0; ; i ++){
+        ans = min(ans, abs(a - b) + i);
+        if(a == b) break;
+        if(a >= b) a /= x;
+        else b /= x;
+    }
+    cout << ans << endl;
+
+    return ;
+}
+
+
+bool cmp(int a, int b){
+    return a > b;
+}
+
+void solve(){
+
+    int n, m; cin >> n >> m;
+    map<int, int> ma;
+    vector<int> a;
+    for(int i = 1; i <= n; i ++){
+        int x; cin >> x;
+        if(!ma[x]) a.push_back(x);
+        ma[x] ++;
+    }
+    sort(a.begin(), a.end(), cmp);
+    for(int i = 0; i < (int)a.size(); i ++){
+        if(i == 0 || a[i - 1] > a[i] + m){
+            if(ma[a[i]] & 1){
+                if(i < (int)a.size() - 1 && a[i] <= a[i + 1] + m){
+                    cout << "YES" << endl;
+                    return ;
+                }
+            }
+            else{
+                cout << "YES" << endl;
+                return ;
+            }
+        }
+    }
+    cout << "NO" << endl;
+    return ;
+}
+
+void solve(){
+        
+    int n; cin >> n;
+    vector<int> a(n + 10);
+    for(int i = 1; i <= n; i ++) cin >> a[i];
+
+    vector<vector<bool> > ma(n + 1, vector<bool> (n + 1));
+    for(int i = 1; i <= n; i ++){
+        vector<int> vis(n + 10);
+        int l = 1000000000, r = -1000000000;
+        for(int j = i; j <= n; j ++){
+            if(vis[a[j]]) break;
+            else vis[a[j]] = 1;
+            l = min(l, a[j]);
+            r = max(r, a[j]);
+            if(r - l + 1 == j - i + 1) ma[l][r] = 1;
+        }
+    }
+    int ans = 0;
+    for(int i = 1; i <= n; i ++){
+        for(int j = i; j <= n; j ++){
+            if(!ma[i][j]) continue;
+            int len = j - i + 1;
+            if(i - len >= 1 && ma[i - len][i - 1]) ans = max(ans, len);
+            else if(j + len <= n && ma[j + 1][j + len]) ans = max(ans, len);
+        }
+    }
+    cout << ans << endl;
+    return ;
+}
+
+const int N = 500000 + 100;
+const int mod = 1000000000 + 7;
+
+int min_p[N], prime[N], idx;
+bool st[N];
+int cnt[N];
+
+void get_prime(){
+    for(int i = 2; i < N; i ++){
+        if(!st[i]) prime[++ idx] = i, min_p[i] = i;
+        for(int j = 1; prime[j] <= N / i; j ++){
+            st[i * prime[j]] = true, min_p[i * prime[j]] = prime[j];
+            if(i % prime[j] == 0) break;
+        }
+    }
+}
+
+void solve(){
+        
+    memset(cnt, 0, sizeof(cnt));
+    int n, m; cin >> n >> m;
+    vector<int> a;
+    for(int i = 1; i <= n; i ++){
+        int x; cin >> x;
+        while(x > 1){
+            int p = min_p[x];
+            int now_cnt = 0;
+            while(x % p == 0){
+                x /= p;
+                now_cnt ++;
+            }            
+            if(!cnt[p]) a.push_back(p);
+            cnt[p] += now_cnt; 
+        }
+    }  
+
+    int ans = 1;
+    for(int e : a) ans = (ans * (1 + cnt[e])) % mod;
+    cout << ans << endl;
+    return ;
+}
