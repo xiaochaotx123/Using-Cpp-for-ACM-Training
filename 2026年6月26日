@@ -1,0 +1,129 @@
+//======================================================================
+const int N = 200000 + 100;
+
+struct Node{
+    int l, r;
+    int sum;
+}tr[4 * N];
+int n, pre[N];
+
+int find(vector<int> &f, int x){
+    int pos = lower_bound(f.begin(), f.end(), x) - f.begin();
+    return pos + 1;
+}
+
+
+void push_up(int u){
+    tr[u].sum = (tr[u << 1].sum + tr[u << 1 | 1].sum);   
+}
+
+void build(int u, int l, int r){
+    if(l == r){
+        tr[u] = {l, r, 0};
+        return ;
+    }
+    else{
+        tr[u] = {l, r, 0};
+        int mid = (tr[u].l + tr[u].r) >> 1;
+        build(u << 1, l, mid);
+        build(u << 1 | 1, mid + 1, r);
+    }
+}
+
+int query(int u, int l, int r){
+    if(l <= tr[u].l && tr[u].r <= r) return tr[u].sum;
+    else{
+        int total_sum = 0;
+        int mid = (tr[u].l + tr[u].r) >> 1;
+        if(l <= mid) total_sum += query(u << 1, l, r);
+        if(r > mid) total_sum += query(u << 1 | 1, l, r);
+        return total_sum;
+    }
+}
+
+void modify(int u, int x){
+    if(tr[u].l == tr[u].r) tr[u].sum ++;
+    else{
+        int mid = (tr[u].l + tr[u].r) >> 1;
+        if(x <= mid) modify(u << 1, x);
+        else modify(u << 1 | 1, x);
+        push_up(u);
+    }
+}
+
+void solve(){
+
+    vector<int> f;
+    cin >> n;
+    for(int i = 1; i <= n; i ++){
+        int x; cin >> x;
+        if(i & 1) pre[i] = pre[i - 1] + x;
+        else pre[i] = pre[i - 1] - x;
+        f.push_back(pre[i]);
+    }
+    f.push_back(0);
+    sort(f.begin(), f.end());
+    f.erase(unique(f.begin(), f.end()), f.end());
+    build(1, 1, (int)f.size() + 10);
+    int ans = 0;
+    vector<int> cnt((int)f.size() + 10);
+    for(int i = 1; i <= n; i += 2){
+        ans += query(1, 1, find(f, pre[i]));
+        ans -= cnt[find(f, pre[i])];
+        cnt[find(f, pre[i - 1])] ++;
+        modify(1, find(f, pre[i - 1]));
+    }
+    build(1, 1, (int)f.size() + 10);
+    fill(cnt.begin(), cnt.end(), 0);
+    for(int i = 2; i <= n; i += 2){
+        ans += query(1, find(f, pre[i]), (int)f.size() + 10);
+        ans -= cnt[find(f, pre[i])];
+        cnt[find(f, pre[i - 1])] ++;
+        modify(1, find(f, pre[i - 1]));
+    }
+    cout << ans + n << endl;
+    return ;
+}
+//======================================================================
+const int mod = 1000000000 + 7;
+
+int gcd(int a, int b){
+    if(!b) return a;
+    else return gcd(b, a % b);
+}
+int lcm(int a, int b){  
+    return a / gcd(a, b) * b;
+}
+
+void solve(){
+    
+    int n; cin >> n;
+    int ans = 0, now_lcm = 1;
+    for(int i = 2; ; i ++){
+        if(now_lcm > n) break;
+        int next_lcm = lcm(now_lcm, i);
+        int sum = n / now_lcm - n / next_lcm;
+        sum = (sum * i) % mod;
+        ans = (ans + sum) % mod;
+        now_lcm = next_lcm;
+    }
+    cout << ans << endl;
+    return ;
+}
+//======================================================================
+void solve(){
+    
+    int n; cin >> n;
+    vector<int> a(n + 10);
+    int sum = 0;
+    for(int i = 1; i <= n; i ++) cin >> a[i], sum += a[i];
+    int ans = sum;
+    if(n >= 2){
+        ans ^= (sum - a[1]);
+        ans ^= (sum - a[n]);
+    }
+    if(n >= 3) ans ^= (sum - a[1] - a[n]);
+    cout << ans << endl;
+    return ;
+}
+//======================================================================
