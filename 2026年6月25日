@@ -1,0 +1,60 @@
+bool cmp(int a, int b){
+    return a > b;
+}
+
+void solve(){
+        
+    int n; cin >> n;
+    vector<int> a(n + 10);
+    for(int i = 1; i <= n; i ++) cin >> a[i];
+    sort(a.begin() + 1, a.begin() + 1 + n, cmp);
+    for(int i = 3; i <= n; i ++){
+        if((a[i - 2] % a[i - 1]) != a[i]){
+            cout << "-1" << endl;
+            return ;
+        }
+    }
+    cout << a[1] << " " << a[2] << endl;
+    return ;
+}
+
+void solve(){
+        
+    int n; cin >> n;
+    int m = n % 12;
+    if(m != 10) cout << m << " " << n - m << endl;
+    else{
+        if(n - m - 12 >= 0) cout << 22 << " " << n - 22 << endl;
+        else cout << "-1" << endl;
+    }
+
+    return ;
+}
+
+
+void solve(){
+
+    int n; cin >> n;
+    vector<int> a(n + 10);
+    for(int i = 1; i <= n; i ++) cin >> a[i];
+    int ans = 0;
+    for(int i = 1; i <= n; i ++){
+        if(i & 1) ans += a[i];
+    }
+
+    int max_sum = 0, now_sum = 0;
+
+    for(int i = 2; i <= n; i += 2){
+        now_sum += a[i] - a[i - 1];
+        max_sum = max(max_sum, now_sum);
+        if(now_sum < 0) now_sum = 0; 
+    }
+    now_sum = 0;
+    for(int i = 3; i <= n; i += 2){
+        now_sum -= a[i] - a[i - 1];
+        max_sum = max(max_sum, now_sum);
+        if(now_sum < 0) now_sum = 0;
+    }
+    cout << ans + max_sum << endl;
+    return ;
+}
