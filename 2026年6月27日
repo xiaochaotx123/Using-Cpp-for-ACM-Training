@@ -1,0 +1,145 @@
+//======================================================================
+const int N = 200000 + 1000;
+
+int n, ans;
+vector<int> adj[N];
+int cnt[N], cnt_odd[N], cnt_even[N], vis[N];
+
+void dfs_getnodes(int u, int fa){
+    if(adj[u].size() == 1 && adj[u][0] == fa){
+        cnt[u] = 1;
+        vis[u] = 1;
+        ans ++;
+        return ;
+    }
+    else{
+        for(int v : adj[u]){
+            if(v == fa) continue;
+            dfs_getnodes(v, u);
+            cnt[u] += cnt[v];
+        }
+        if(cnt[u] & 1) ans ++;
+    }
+}
+
+void dfs_getcnt(int u, int fa, int cntodd, int cnteven){
+    cnt_odd[u] = cntodd + (cnt[u] & 1);
+    cnt_even[u] = cnteven + (!(cnt[u] & 1));
+    for(int v : adj[u]){
+        if(v == fa) continue;
+        if(cnt[u] & 1){
+            cntodd ++;
+            dfs_getcnt(v, u, cntodd, cnteven);
+            cntodd --;
+        }
+        else{
+            cnteven ++;
+            dfs_getcnt(v, u, cntodd, cnteven);
+            cnteven --;
+        }
+    }
+}
+void solve(){
+    
+    cin >> n;
+    ans = 0;
+    for(int i = 1; i <= n; i ++){
+        adj[i].clear();
+        cnt[i] = cnt_odd[i] = cnt_even[i] = vis[i] = 0;
+    }
+    for(int i = 1; i <= n - 1; i ++){
+        int u, v; cin >> u >> v;
+        adj[u].push_back(v);
+        adj[v].push_back(u);
+    }
+    if(adj[1].size() == 1) cnt[1] = 1, vis[1] = 1;
+    dfs_getnodes(1, -1);
+    dfs_getcnt(1, -1, 0, 0);
+    //for(int i = 1; i <= n; i ++) cout << i << " " << cnt[i] << endl;
+    int total_cnt = 0;
+    for(int i = 1; i <= n; i ++){
+        if(vis[i]) total_cnt ++;
+    }
+    if(total_cnt & 1){
+        int fans = 1000000000000000000;
+        for(int i = 1; i <= n; i ++){
+            if(vis[i]){
+                fans = min(fans, ans - cnt_odd[i] + cnt_even[i]);
+            }
+        }
+        cout << fans << endl;
+    }
+    else cout << ans << endl;
+    return ;
+}
+//======================================================================
+void solve(){
+    
+    int n; cin >> n;
+    vector<int> a(n + 10);
+    for(int i = 1; i <= n; i ++) cin >> a[i];
+    int ans = 0;
+    for(int i = 2; i <= n; i ++){
+        if(a[i] >= a[i - 1] * 2){
+            int x = a[i - 1];
+            while(x * 2 < a[i]){
+                x *= 2;
+                ans ++;
+            }
+        }
+    }
+    for(int i = n - 1; i >= 1; i --){
+        if(a[i] >= a[i + 1] * 2){
+            int x = a[i + 1];
+            while(x * 2 < a[i]){
+                ans ++;
+                x *= 2;
+            }
+        }
+    }
+    cout << ans << endl;
+    return ;
+}
+//======================================================================
+void solve(){
+    
+    int cnt0 = 0, cnt1 = 0, cnt2 = 0;
+    int n; cin >> n;
+    for(int i = 1; i <= n; i ++){
+        int x; cin >> x;
+        x %= 3;
+        if(x == 0) cnt0 ++;
+        else if(x == 1) cnt1 ++;
+        else cnt2 ++;
+    }
+    n /= 3;
+    int ans = 0;
+    if(cnt0 > n){
+        ans += cnt0 - n;
+        cnt1 += cnt0 - n;
+        cnt0 = n;
+    }
+    if(cnt1 > n){
+        ans += cnt1 - n;
+        cnt2 += cnt1 - n;
+        cnt1 = n;
+    }
+    if(cnt2 > n){
+        ans += cnt2 - n;
+        cnt0 += cnt2 - n;
+        cnt2 = n;
+    }
+    if(cnt0 > n){
+        ans += cnt0 - n;
+        cnt1 += cnt0 - n;
+        cnt0 = n;
+    }
+    if(cnt1 > n){
+        ans += cnt1 - n;
+        cnt2 += cnt1 - n;
+        cnt1 = n;
+    }    
+    cout << ans << endl;
+    return ;
+}
+//======================================================================
