@@ -1,0 +1,425 @@
+//============================================================================================================================================
+https://codeforces.com/problemset/problem/1285/C
+int gcd(int a, int b){
+    if(!b) return a;
+    else return gcd(b, a % b);
+}
+
+void solve(){
+    
+    int n; cin >> n;
+    int a = 1, b = n;
+    for(int i = 2; i * i <= n; i ++){
+        if(n % i == 0){
+            if(gcd(i, n / i) != 1) continue; 
+            int max_num = max(i, n / i);
+            if(max_num < max(a, b)) a = i, b = n / i;
+        }
+    }
+    cout << a << " " << b << endl;
+    return ;
+}
+//============================================================================================================================================
+https://codeforces.com/problemset/problem/1487/D
+void solve(){
+    
+    // for(int i = 1; i <= 500; i ++){
+    //     for(int j = i; j <= 500; j ++){
+    //         for(int k = j; k <= 500; k ++){
+    //             if((i * i == j + k) && (i * i + j * j == k * k)) cout << i << " " << j << " " << k << endl;
+    //         }
+    //     }
+    // }
+    int n; cin >> n;
+    int ans = (int)sqrt(2 * n - 1);
+    if(!(ans & 1)) ans --;
+    cout << ans / 2 << endl;
+    return ;
+}
+//============================================================================================================================================
+https://www.matiji.net/exam/brushquestion/3/800/7F280BDFD141C1E2D42F7D8906B2F5B9?from=1
+const int N = 100000 + 100;
+
+set<string> se;
+map<string, int> ma;
+map<int, string> rma;
+map<int, int> nex;
+
+int find(int x){
+    if(nex[x] == -1) return x;
+    else{
+        nex[x] = find(nex[x]);
+        return nex[x];
+    }
+}
+void solve(){
+    
+    int n; cin >> n;
+    vector<pair<string, string> > a(n + 10);
+    for(int i = 1; i <= n; i ++){
+        string s1, s2; cin >> s1 >> s2;
+        se.insert(s1);
+        se.insert(s2);
+        a[i].first = s1;
+        a[i].second = s2;
+    }
+    int idx = 0;
+    for(string s : se) ma[s] = ++ idx, rma[idx] = s;
+    for(int i = 1; i <= idx; i ++) nex[i] = -1;
+    for(int i = 1; i <= n; i ++){
+        string s1 = a[i].first, s2 = a[i].second;
+        nex[ma[s1]] = ma[s2];
+    }
+    int q; cin >> q;
+    string s;
+    cin.ignore();
+    while(q --){
+        getline(cin, s);
+        string now_s = "";
+        for(int i = 0; i < (int)s.size(); i ++){
+            if(s[i] == ' '){
+                if(ma.count(now_s) == 0) cout << now_s;
+                else{
+                    int num = find(ma[now_s]);
+                    cout << rma[num];
+                }
+                cout << " ";
+                now_s = "";
+            }
+            else now_s += s[i];
+        }
+        if(ma.count(now_s) == 0) cout << now_s;
+        else{
+            int num = find(ma[now_s]);
+            cout << rma[num];
+        }        
+        cout << endl;
+    }
+    return ;
+}
+//============================================================================================================================================
+https://codeforces.com/problemset/problem/115/A
+const int N = 2000 + 100;
+vector<int> adj[N];
+int vis[N];
+
+int n, a[N], max_len = 1;
+
+void dfs(int u, int depth){
+    max_len = max(max_len, depth);
+    for(int v : adj[u]){
+        dfs(v, depth + 1);
+    }
+}
+
+void solve(){
+    
+    cin >> n;
+    for(int i = 1; i <= n; i ++){
+        cin >> a[i];
+        if(a[i] != -1) adj[a[i]].push_back(i);
+    }
+    for(int i = 1; i <= n; i ++){
+        if(a[i] == -1) dfs(i, 1);
+    }
+    cout << max_len << endl;
+    return ;
+}
+//============================================================================================================================================
+https://codeforces.com/problemset/problem/33/B
+string s1, s2;
+int n, d[30][30];
+void solve(){
+    for(int i = 1; i <= 26; i ++){
+        for(int j = 1; j <= 26; j ++) d[i][j] = 10000000;
+    }
+    for(int i = 1; i <= 26; i ++) d[i][i] = 0;
+    cin >> s1 >> s2;
+    cin >> n;
+
+    for(int i = 1; i <= n; i ++){
+        char a, b; cin >> a >> b;
+        int u = a - 'a' + 1, v = b - 'a' + 1;
+        int x; cin >> x;
+        d[u][v] = min(d[u][v], x);
+    }
+    
+    if((int)s1.size() != (int)s2.size()){
+        cout << -1 << endl;
+        return ;
+    }
+    for(int k = 1; k <= 26; k ++){
+        for(int i = 1; i <= 26; i ++){
+            for(int j = 1; j <= 26; j ++){
+                d[i][j] = min(d[i][j], d[i][k] + d[k][j]);
+            }
+        }
+    }
+
+    string fans = "";
+    int fcost = 0;
+    for(int i = 0; i < (int)s1.size(); i ++){
+        int u = s1[i] - 'a' + 1, v = s2[i] - 'a' + 1;
+        int min_cost = d[u][v], ans = v;
+        for(int j = 1; j <= 26; j ++){
+            if(d[u][j] + d[v][j] < min_cost){
+                min_cost = d[u][j] + d[v][j];
+                ans = j;
+            }
+        }
+        char now_ans = (ans - 1) + 'a';
+        fans += now_ans;
+        fcost += min_cost;
+    }
+    if(fcost >= 10000000){
+        cout << "-1" << endl;
+        return ;
+    }
+    cout << fcost << endl;
+    cout << fans << endl;
+    return ;
+}
+//============================================================================================================================================
+https://codeforces.com/problemset/problem/893/C
+const int N = 100000 + 100;
+int n, m;
+
+int p[N], money[N];
+int find(int x){
+    if(x != p[x]) p[x] = find(p[x]);
+    return p[x];
+}
+
+void solve(){
+    
+    cin >> n >> m;
+    for(int i = 1; i <= n; i ++){
+        p[i] = i;
+        cin >> money[i];
+    }
+    for(int i = 1; i <= m; i ++){
+        int u, v; cin >> u >> v;
+        int fu = find(u), fv = find(v);
+        if(fu != fv){
+            money[fv] = min(money[fv], money[fu]);
+            p[fu] = fv;
+        }
+    }
+    int ans = 0;
+    for(int i = 1; i <= n; i ++){
+        if(i == p[i]) ans += money[i];
+    }
+    cout << ans << endl;
+    return ;
+}
+//============================================================================================================================================
+https://codeforces.com/problemset/problem/939/D
+const int N = 30;
+int n, p[N];
+int find(int x){
+    if(x != p[x]) p[x] = find(p[x]);
+    return p[x];
+}
+
+void solve(){
+    
+    for(int i = 1; i < N; i ++) p[i] = i;
+    cin >> n;
+    vector<char> a(n + 10), b(n + 10);
+    vector<pair<char, char> > ans;
+    for(int i = 1; i <= n; i ++) cin >> a[i];
+    for(int i = 1; i <= n; i ++) cin >> b[i];
+    for(int i = 1; i <= n; i ++){
+        int u = a[i] - 'a' + 1;
+        int v = b[i] - 'a' + 1;
+        int fu = find(u), fv = find(v);
+        if(fu != fv){
+            ans.push_back({a[i], b[i]});
+            p[fu] = fv;
+        }
+    }
+    cout << (int)ans.size() << endl;
+    for(auto x : ans) cout << x.first << " " << x.second << endl;
+    
+    return ;
+}
+//============================================================================================================================================
+https://codeforces.com/problemset/problem/500/B
+const int N = 300 + 100;
+int n, p[N];
+int find(int x){
+    if(x != p[x]) p[x] = find(p[x]);
+    return p[x];
+}
+
+void solve(){
+    
+    cin >> n;
+    vector<int> a(n + 10);
+    for(int i = 1; i <= n; i ++){
+        cin >> a[i];
+        p[i] = i;
+    }
+    for(int i = 1; i <= n; i ++){
+        for(int j = 1; j <= n; j ++){
+            char sh; cin >> sh;
+            if(i < j && sh == '1'){
+                int u = a[i], v = a[j];
+                int fu = find(u), fv = find(v);
+                if(fu != fv) p[fu] = fv;
+            }
+        }
+    }
+    vector<int> vis(n + 10);
+    for(int i = 1; i <= n; i ++){
+        int min_num = n + 10;
+        for(int j = 1; j <= n; j ++){
+            if(vis[a[j]]) continue;
+            int u = a[i], v = a[j];
+            int fu = find(u), fv = find(v);
+            if(fu == fv && min_num > a[j]){
+                min_num = a[j];
+            }
+        }
+        vis[min_num] = 1;
+        cout << min_num << " ";
+    }
+    cout << endl;
+    return ;
+}
+//============================================================================================================================================
+https://codeforces.com/problemset/problem/467/D
+const int N = 400000 + 100;
+int n, m;
+string a[N];
+map<string, int> ma;
+map<int, string> rma;
+int idx;
+
+vector<int> adj[N];
+
+int dfn[N], low[N], dfn_cnt;
+int scc_id[N], scc_cnt;
+bool in_stack[N];
+stack<int> st;
+
+int scc_r[N], scc_len[N];
+int word_r[N], word_len[N];
+
+vector<int> dag[N];
+int dp_r[N], dp_len[N];
+
+
+void tarjan(int u){
+    dfn[u] = low[u] = ++ dfn_cnt;
+    st.push(u);
+    in_stack[u] = true;
+
+    for(int v : adj[u]){
+        if(!dfn[v]){
+            tarjan(v);
+            low[u] = min(low[u], low[v]);
+        }
+        else if(in_stack[v]){
+            low[u] = min(low[u], dfn[v]);
+        }
+    }
+    if(dfn[u] == low[u]){
+        scc_cnt ++;
+        scc_r[scc_cnt] = 1000000000;
+        scc_len[scc_cnt] = 1000000000;
+        int v = 0;
+        while(v != u){
+            v = st.top();
+            st.pop();
+            in_stack[v] = false;
+            scc_id[v] = scc_cnt;
+            if(word_r[v] < scc_r[scc_cnt] || 
+                (word_r[v] == scc_r[scc_cnt] && word_len[v] < scc_len[scc_cnt])){
+                    scc_r[scc_cnt] = word_r[v];
+                    scc_len[scc_cnt] = word_len[v];
+            }
+        }
+    }
+}
+
+void dfs_dag(int u){
+    if(dp_r[u] != -1) return ;
+    dp_r[u] = scc_r[u];
+    dp_len[u] = scc_len[u];
+    for(int v : dag[u]){
+        dfs_dag(v);
+        if(dp_r[v] < dp_r[u] || 
+            (dp_r[v] == dp_r[u] && dp_len[v] < dp_len[u])){
+                dp_r[u] = dp_r[v];
+                dp_len[u] = dp_len[v];
+        }
+    }
+}
+
+int add_word(const string &s){
+    if(ma.count(s) == 0){
+        ma[s] = ++ idx;
+        rma[idx] = s;
+        int cnt_r = 0;
+        for(char c : s) if(c == 'r') cnt_r ++;
+        word_r[idx] = cnt_r;
+        word_len[idx] = (int)s.size();
+    }
+    return ma[s];
+}
+
+string to_lower(const string &s){
+    string t = s;
+    for(int i = 0; i < (int)t.size(); i ++){
+        if('A' <= t[i] && t[i] <= 'Z') t[i] = (char)(t[i] - 'A' + 'a');
+    }
+    return t;
+}
+
+void solve(){
+    
+    cin >> n;
+    for(int i = 1; i <= n; i ++){
+        string s; cin >> s;
+        a[i] = to_lower(s);
+        add_word(a[i]);
+    }
+
+    cin >> m;
+    for(int i = 1; i <= m; i ++){
+        string s1, s2; cin >> s1 >> s2;
+        s1 = to_lower(s1);
+        s2 = to_lower(s2);
+        int u = add_word(s1);
+        int v = add_word(s2);
+        adj[u].push_back(v);
+    }
+
+    for(int i = 1; i <= idx; i ++){
+        if(!dfn[i]) tarjan(i);
+    }
+    
+    for(int u = 1; u <= idx; u ++){
+        for(int v : adj[u]){
+            if(scc_id[u] != scc_id[v]){
+                dag[scc_id[u]].push_back(scc_id[v]);
+            }
+        }
+    }
+
+    memset(dp_r, -1, sizeof(dp_r));
+
+    for(int i = 1; i <= scc_cnt; i ++) dfs_dag(i);
+
+    int ansr = 0, anslen = 0;
+    for(int i = 1; i <= n; i ++){
+        int u = ma[a[i]];
+        int sid = scc_id[u];
+        ansr += dp_r[sid];
+        anslen += dp_len[sid];
+    }
+    cout << ansr << " " << anslen << endl;
+    return ;
+}
+//============================================================================================================================================
