@@ -1,0 +1,403 @@
+//============================================================================================================================================
+tarjan算法是由Robert Tarjan在1972年提出,用于在有向图中找出所有的强连通分量(SCC,Strongly Connected Component)。只需要一次DFS,时间复杂度为O(n + m)
+1,什么是强连通分量
+在一个有向图中,如果节点A能够走到节点B,同时节点B也能够走回A,那么A和B就是连通的。一个强连通分量和就是图中最大的"相互"可达"的节点集合
+2,dfn[]和low[]数组
+dfn[u]是时间戳,表示节点u是第几个被DFS访问到的了,相当于给节点根据访问的顺寻编号
+low[u]表示从节点u出发,能回到醉倒的祖先的dfn值,相当于从节点u能够往上"爬"多远、
+当dfn[u] = low[u]时,u就是一个SCC的"根"--它无法回到更早的祖先,栈中从u到栈顶的所有节点构成一个SCC
+
+算法的流程:
+1:DFS向下走 -- 给每个节点打dfn标签 -- 遇到回头边时更新low
+2:回溯时把v的了low传给u -- 发现的dfn[u] = low[u]时弹栈
+
+算法模板:
+# include<bits/stdc++.h>
+using namespace std;
+
+#define endl '\n
+#define int long long
+#define IOS ios::sync_with_stdio(false);cin.tie(NULL);cout.tie(NULL);
+#define HelloWorld IOS
+const bool HAVE_CASE = false;
+
+const int N = 200000 + 100;
+int n, m; 
+vector<int> adj[N];
+
+// dfn[u]:dfn序,表示节点u是第几个被访问的(时间戳)
+// 一开始初始化全为0,表示该节点还未被访问
+int dfn[N]; 
+
+// low[u]:回溯值,表示从节点u出发往下走,能到达的dfn最小的节点是谁
+// low[u]就是"从u出发往下走,能回来的最早的那个祖先的编号"
+// 如果low[u] = dfn[u],说明u是一个SCC的"根"(它回不到更早的祖先了)
+int low[N];
+
+
+int dfn_cnt; // 当前时间戳计数器,每访问一个新节点就 +1
+
+// Tarjan算法用的栈,存储当前DFS路径上的节点
+// 每当发现一个SCC的根时,从栈顶弹出一整段就是这个scc的所有节点
+stack<int> sta;
+
+// in_stack[i]:标记节点u是否在栈里面
+// 为什么需要标记,因为low[u]更新时,只有在"栈中的"节点才说明还在当前scc探索中
+bool in_stack[N];
+
+// scc_id[u]:节点u属于哪一个SCC(编号从1开始)
+// scc_id[u]初始化为0,表示节点u还未分配SCC
+int scc_id[N];
+
+
+int scc_cnt; // 表示SCC的总数目
+
+// scc_size[i]:表示第i个SCC包含多少个节点(可选,很多题目需要统计)
+int scc_size[N];
+
+// --------------缩点后的DAG--------------
+// dag[u]:缩点后的DAG的邻接表
+// 把每个SCC堪称一个"超级节点",如果原图有从SCC_A中某个点到SCC_B中某个点的边
+//  就在DAG中连接一条SCC_A --> SCC_B的边
+
+void tarjan(int u){
+    // 步骤一:进入节点u,给它分配dfn和low的初始值(初始值相同)
+    dfn[u] = low[u] = ++ dfn_cnt;
+
+    // 步骤二:将u入栈并标记在栈中
+    sta.push(u);
+    in_stack[u] = true;
+
+    // 步骤3:遍历u的所有出边 u --> v
+    for(int v : adj[u]){
+        if(!dfn[u]){
+            // 情况1: 如果v点还没有访问过, 则直接递归进入v
+            tarjan(v)
+            // 递归完回来后, 使用v的low[v]来更新u的low[u]值
+            // 含义是如果v节点能够回到某个祖先, 那么节点u就可以通过v也回到某个祖先
+            low[u] = min(low[u], low[v]);
+        }
+        else if(in_stack[v]){
+            // 情况2: 如果v访问过, 而且还在栈里面
+            // 说明v是u的祖先(这里的u --> v就是一条回头边), 直接使用v的dfn[]来更新u的low值
+            low[u] = min(low[u], dfn[v]);
+        }
+        // 情况3: v被访问过但不在栈中, 说明节点v已经被分到某个SCC中了
+        // 不需要处理, 因为这相当于是一个死胡同
+    }
+
+    // 步骤4: 判断u是否为SCC的根
+    // 如果low[u] = dfn[u], 说明u无法回到比它更早的祖先
+    // 此时栈中从u到栈顶的所有节点就是一个SCC
+    if(dfn[u] == dfn[u]){
+        scc_cnt ++; // 新建一个SCC
+        int v = 0; // 初始化为0, 保证循环直接执行一次
+        while(u != v){
+            v = sta.top();
+            sta.pop();
+            in_stack[v] = false;
+            scc_id[v] = scc_cnt; // 记录v属于当前的SCC
+            scc_size[scc_cnt] ++; 
+        }
+    }   
+}
+
+// 缩点, 将原图转化为DAG
+void build_dag(){
+    for(int u = 1; u <= n; u ++){
+        for(int v : adj[u]){
+            if(scc_id[u] != scc_id[v]){
+                dag[scc_id[u]].push_back(scc_id[v]);
+            }
+        }
+    }
+    // dag中可能存在重复边长, 根据题目是否需要去重
+}
+void solve(){
+    cin >> n >> m; // n个节点,m条边
+    for(int i = 1; i <= n; i ++){
+        int u, v; cin >> u >> v;
+        adj[u].push_back(v);    
+    }
+
+    // 对于每一个未访问的节点运行Tarjan
+    // 因为图可能不连通,所以需要遍历每一个节点确保每一个节点都能被访问到
+    for(int i = 1; i <= n; i ++){
+        if(!dfn[i]) tarjan(i);
+    }
+
+    cout << "SCC的数量: " << scc_cnt << endl;
+    for(int i = 1; i <= n; i ++){
+        cout << "节点 " << i " 属于SCC " << scc_id[i] << endl;
+    }   
+    build_dag();
+}
+
+signed main(){
+    HellowWorld;
+
+    int tt = 1;
+    if(HAVE_CASE) cin >> tt;
+    while(tt --) solve();
+    return 0;
+}
+//============================================================================================================================================
+https://codeforces.com/problemset/problem/427/C
+const int N = 100000 + 100;
+const int inf = 1000000000;
+const int mod = 1000000000 + 7;
+int n, m;
+vector<int> adj[N];
+int a[N];
+
+int dfn[N], low[N];
+int dfn_cnt, scc_cnt;
+int scc_id[N];
+
+stack<int> sta;
+bool in_stack[N];
+
+vector<int> dag[N];
+void Tarjan(int u){
+    dfn[u] = low[u] = ++ dfn_cnt;
+    sta.push(u);
+    in_stack[u] = true;
+
+    for(int v : adj[u]){
+        if(!dfn[v]){
+            Tarjan(v);
+            low[u] = min(low[u], low[v]);
+        }
+        else if(in_stack[v]) low[u] = min(low[u], dfn[v]);
+    }
+
+    if(dfn[u] == low[u]){
+        scc_cnt ++;
+        int v = 0;
+        while(v != u){
+            v = sta.top();
+            sta.pop();
+            in_stack[v] = false;
+            scc_id[v] = scc_cnt;
+        }
+    }
+}
+
+
+void solve(){
+    
+    cin >> n;
+    for(int i = 1; i <= n; i ++) cin >> a[i];
+    cin >> m;
+    for(int i = 1; i <= m; i ++){
+        int u, v; cin >> u >> v;
+        adj[u].push_back(v);
+    }
+
+    for(int i = 1; i <= n; i ++){
+        if(!dfn[i]) Tarjan(i);
+    }
+
+    vector<int> scc_mincost(scc_cnt + 10, inf), scc_mincost_cnt(scc_cnt + 10, 0);
+    for(int i = 1; i <= n; i ++){
+        int id = scc_id[i];
+        if(scc_mincost[id] > a[i]){
+            scc_mincost[id] = a[i];
+            scc_mincost_cnt[id] = 1;
+        }
+        else if(scc_mincost[id] == a[i]){
+            scc_mincost_cnt[id] ++;
+        }
+    }
+    int total_cost = 0, total_cnt = 1;
+    for(int i = 1; i <= scc_cnt; i ++){
+        total_cost += scc_mincost[i];
+        total_cnt = (total_cnt * scc_mincost_cnt[i]) % mod;
+    }
+    cout << total_cost << " " << total_cnt << endl;
+    return ;
+}
+//============================================================================================================================================
+https://codeforces.com/problemset/problem/949/C
+const int N = 200000 + 100;
+int n, m, h;
+int t[N];
+vector<int> adj[N];
+
+int dfn[N], low[N];
+int dfn_cnt;
+stack<int> sta;
+bool in_stack[N];
+
+int scc_cnt;
+int scc_id[N];
+vector<int> dag[N];
+
+map<pair<int, int>, int> ma;
+void Tarjan(int u){
+    dfn[u] = low[u] = ++ dfn_cnt;
+    sta.push(u);
+    in_stack[u] = true;
+
+    for(int v : adj[u]){
+        if(!dfn[v]){
+            Tarjan(v);
+            low[u] = min(low[u], low[v]);
+        }
+        else if(in_stack[v]) low[u] = min(low[u], dfn[v]);
+    }
+
+    if(dfn[u] == low[u]){
+        scc_cnt ++;
+        int v = 0;
+        while(u != v){
+            v = sta.top();
+            sta.pop();
+            in_stack[v] = false;
+            scc_id[v] = scc_cnt;
+        }
+    }
+}
+
+void build_dag(){
+    for(int u = 1; u <= n; u ++){
+        for(int v : adj[u]){
+            if(scc_id[u] != scc_id[v]) dag[scc_id[u]].push_back(scc_id[v]);
+        }
+    }
+}
+
+void solve(){
+    
+    cin >> n >> m >> h;
+    for(int i = 1; i <= n; i ++) cin >> t[i];
+    for(int i = 1; i <= m; i ++){
+        int u, v; cin >> u >> v;
+        int u1 = (t[u] + 1) % h, v1 = (t[v] + 1) % h;
+        if(u1 == t[v] && ma.count({u, v}) == 0){
+            ma[{u, v}] = 1;
+            adj[u].push_back(v);
+        }
+        if(v1 == t[u] && ma.count({v, u}) == 0){
+            ma[{v, u}] = 1;
+            adj[v].push_back(u);
+        }
+    }
+
+    for(int i = 1; i <= n; i ++){
+        if(!dfn[i]) Tarjan(i);
+    }
+
+
+    build_dag();
+
+
+    vector<int> num_scc_id(scc_cnt + 10);
+    for(int i = 1; i <= n; i ++) num_scc_id[scc_id[i]] ++;
+    int min_num = 1000000000, min_idx = 1;
+    for(int i = 1; i <= scc_cnt; i ++){
+        if(dag[i].size() == 0){
+            // cout << "zero == " << i << endl;
+            // cout << "here == " << num_scc_id[i] << " " << min_num << endl;
+            if(num_scc_id[i] < min_num){
+                min_num = num_scc_id[i];
+                min_idx = i;
+            }
+        }
+    }
+    //cout << "min_idx " << min_idx << endl; 
+    vector<int> ans;
+    for(int i = 1; i <= n; i ++){
+        //cout << "i == " << i << " " << "scc_id[i] == " << scc_id[i] << endl;
+        if(scc_id[i] == min_idx) ans.push_back(i);
+    }
+    cout << (int)ans.size() << endl;
+    for(int e : ans) cout << e << " ";
+    cout << endl;
+
+    return ;
+}
+//============================================================================================================================================
+https://codeforces.com/problemset/problem/999/E
+const int N = 5000 + 100;
+int n, m, root;
+
+vector<int> adj[N];
+
+int dfn[N], low[N];
+int dfn_cnt, scc_cnt;
+
+stack<int> sta;
+bool in_stack[N];
+
+int scc_id[N];
+vector<int> dag[N];
+
+int vis[N], indeg[N];
+void dfs(int u){
+    vis[u] = 1; 
+    for(int v : dag[u]){
+        if(vis[v]) continue;
+        dfs(v);
+    }
+}
+
+void Tarjan(int u){
+    dfn[u] = low[u] = ++ dfn_cnt;
+    sta.push(u);
+    in_stack[u] = true;
+
+    for(int v : adj[u]){
+        if(!dfn[v]){
+            Tarjan(v);
+            low[u] = min(low[u], low[v]);
+        }
+        else if(in_stack[v]) low[u] = min(low[u], dfn[v]);
+    }
+
+    if(dfn[u] == low[u]){
+        int v = 0;
+        scc_cnt ++;
+        while(u != v){
+            v = sta.top();
+            sta.pop();
+            in_stack[v] = false;
+            scc_id[v] = scc_cnt;
+        }
+    }
+}
+
+void build_dag(){
+    for(int u = 1; u <= n; u ++){
+        for(int v : adj[u]){
+            if(scc_id[u] != scc_id[v]){
+                indeg[scc_id[v]] ++;
+                dag[scc_id[u]].push_back(scc_id[v]);
+            }
+        }
+    }
+}
+void solve(){
+    
+    cin >> n >> m >> root;
+    for(int i = 1; i <= m; i ++){
+        int u, v; cin >> u >> v;
+        adj[u].push_back(v);
+    }
+
+    for(int i = 1; i <= n; i ++){
+        if(!dfn[i]) Tarjan(i);
+    }
+
+    build_dag();
+    dfs(scc_id[root]);
+
+    int ans = 0;
+    for(int i = 1; i <= scc_cnt; i ++){
+        if(vis[i]) continue;
+        if(!indeg[i]) ans ++;
+    }
+    cout << ans << endl;
+    return ;
+}
+//============================================================================================================================================
