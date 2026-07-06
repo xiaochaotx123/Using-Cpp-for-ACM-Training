@@ -1,0 +1,193 @@
+//============================================================================================================================================
+https://codeforces.com/problemset/problem/1213/F
+const int N = 200000 + 100;
+int n, m; 
+int p[N], q[N];
+
+vector<int> adj[N];
+
+int dfn[N], low[N];
+int dfn_cnt, scc_cnt;
+
+stack<int> sta;
+bool in_stack[N];
+
+int scc_id[N];
+
+vector<int> dag[N];
+
+int scc_indeg[N];
+
+char sh = 'a';
+int vis[N];
+
+void Tarjan(int u){
+    dfn[u] = low[u] = ++ dfn_cnt;
+    sta.push(u);
+    in_stack[u] = true;
+
+    for(int v : adj[u]){
+        if(!dfn[v]){
+            Tarjan(v);
+            low[u] = min(low[u], low[v]);
+        }
+        else if(in_stack[v]) low[u] = min(low[u], dfn[v]);
+    }
+
+    if(dfn[u] == low[u]){
+        int v = 0;
+        scc_cnt ++;
+        while(u != v){
+            v = sta.top();
+            sta.pop();
+            in_stack[v] = false;
+            scc_id[v] = scc_cnt;
+        }
+    }
+}
+
+
+void build_dag(){
+    for(int u = 1; u <= n; u ++){
+        for(int v : adj[u]){
+            if(scc_id[u] != scc_id[v]){
+                scc_indeg[scc_id[v]] ++;
+                dag[scc_id[u]].push_back(scc_id[v]);
+            }
+        }
+    }
+}
+
+void dfs(int u, vector<char> &ans_char){
+    if(!vis[u]){
+        ans_char[u] = sh;
+        if(sh < 'z') sh += 1;
+    }
+    vis[u] = 1;
+    for(int v : dag[u]){
+        if(vis[v]) continue;
+        dfs(v, ans_char);
+    }
+}
+void solve(){
+    
+    cin >> n >> m;
+    for(int i = 1; i <= n; i ++) cin >> p[i];
+    for(int i = 1; i <= n; i ++) cin >> q[i];
+    
+    for(int i = 1; i <= n - 1; i ++){
+        adj[p[i]].push_back(p[i + 1]);
+        adj[q[i]].push_back(q[i + 1]);
+    }
+    
+    for(int i = 1; i <= n; i ++){
+        if(!dfn[i]) Tarjan(i);
+    }
+
+    if(scc_cnt < m){
+        cout << "NO" << endl;
+        return ;
+    }
+    build_dag();
+
+    vector<int> root;
+    for(int i = 1; i <= scc_cnt; i ++){
+        if(scc_indeg[i] == 0) root.push_back(i);
+    }
+    if(!root.size() || root.size() > 26){
+        cout << "NO" << endl;
+        return ;
+    }
+
+    vector<char> ans_char(scc_cnt + 10);
+    for(int i = 0; i < (int)root.size(); i ++){
+        vis[root[i]] = 1;
+        ans_char[root[i]] = sh;
+        sh += 1;
+    }
+    for(int i = 0; i < (int)root.size(); i ++) dfs(root[i], ans_char);
+    
+    cout << "YES" << endl;
+    for(int i = 1; i <= n; i ++){
+        cout << ans_char[scc_id[i]];
+    }
+    cout << endl;
+    return ;
+}
+//============================================================================================================================================
+https://www.matiji.net/exam/brushquestion/2/800/7F280BDFD141C1E2D42F7D8906B2F5B9?from=1
+bool cmp(pair<int, int> a, pair<int, int> b){
+    return a.first < b.first;
+}
+void solve(){
+    
+    vector<pair<int, int> > a;
+    int x, y; 
+    while(cin >> x >> y){
+        if(x > y) swap(x, y);
+        a.push_back({x, y});
+    }
+    sort(a.begin(), a.end(), cmp);
+    int max_r = 0, max_len = 0;
+    for(int i = 0; i < (int)a.size(); i ++){
+        if(i == 0) max_r = a[i].second;
+        else{
+            max_len = max(max_len, min(max_r, a[i].second) - a[i].first + 1);
+            max_r = max(max_r, a[i].second);
+        }
+    }
+    cout << max_len << endl;
+    return ;
+}
+//============================================================================================================================================
+https://codeforces.com/problemset/problem/545/C
+void solve(){
+    
+    int n; cin >> n;
+    vector<pair<int, int> > a(n + 10);
+    for(int i = 1; i <= n; i ++) cin >> a[i].first >> a[i].second;
+    int ans = 0, pos = -1000000000000000000;
+    for(int i = 1; i <= n; i ++){
+        if(a[i].first - a[i].second > pos){
+            ans ++;
+            pos = a[i].first;
+        }
+        else if(i + 1 <= n && a[i].first + a[i].second < a[i + 1].first){
+            ans ++;
+            pos = a[i].first + a[i].second;
+        }
+        else if(i == n) ans ++;
+        else pos = a[i].first;
+    }
+    cout << ans << endl;
+    return ;
+}
+//============================================================================================================================================
+https://codeforces.com/problemset/problem/2224/B
+void solve(){
+    
+    int n; cin >> n;
+    vector<int> a(n), b, v;
+    for(int i = 0; i < n; i ++) cin >> a[i];
+    map<int, int> ma;
+    sort(a.begin(), a.end());
+    b.push_back(a[n - 1]);
+    for(int i = 0; i < n - 1; i ++){
+        if(ma.count(a[i]) == 0){
+            ma[a[i]] = 1;
+            b.push_back(a[i]);
+        }
+        else v.push_back(a[i]);
+    }
+    for(int e : v) b.push_back(e);
+    ma.clear();
+    int mex_num = 0, ans = 0;
+    for(int i = 0; i < n; i ++){
+        ma[b[i]] = 1;
+        while(ma[mex_num]) mex_num ++;
+        ans += b[0] + mex_num;
+    }
+    cout << ans << endl;
+    return ;
+}
+//============================================================================================================================================
