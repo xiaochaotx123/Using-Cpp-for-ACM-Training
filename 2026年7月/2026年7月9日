@@ -1,0 +1,171 @@
+//============================================================================================================================================
+https://codeforces.com/problemset/problem/1901/D
+void solve(){
+    
+    int n; cin >> n;
+    vector<int> a(n + 10), pre(n + 10), suf(n + 10);
+    for(int i = 1; i <= n; i ++) cin >> a[i];
+    int max_num = 0;
+    for(int i = n; i >= 1; i --){
+        if(i <= n - 1) suf[i] = max_num;
+        max_num = max(max_num, a[i] + i - 1);
+    }
+    max_num = 0;
+    for(int i = 1; i <= n; i ++){
+        if(i >= 2) pre[i] = max_num;
+        max_num = max(max_num, a[i] + n - i);
+    }
+    int ans = 1000000000000000000;
+    for(int i = 1; i <= n; i ++){
+        int now_ans = max({a[i], pre[i], suf[i]});
+        ans = min(ans, now_ans);
+    }
+    cout << ans << endl;
+    return ;
+}
+//============================================================================================================================================
+codeforces.com/problemset/problem/2018/B
+
+以我现在的能力, 我觉得这道题目挺难的
+首先如果以i为起到, 是否存在一条遍历方法满足到达各个节点的时间点都小于等于对应的a[j]
+如果现在的起点为i
+显然如果对于其他节点j, 从i出发到达j的最少时间为j-i+1, 所以如果|j - i + 1| > a[j]时, 也就是说即使从i到j最短时间也是大于a[j], 所以起点i不可能满足条件
+这是条件一
+
+但是这是单边的, 也就是直接从i出发朝着单个方向前行, 但是对于到达另一个方向的点时:例如以i为起点出发先向左方向出发到达j点, 然后折返回来向右边方向出发到达k点, 那么从j到k的时间|k - j + 1| > a[k]时也不行
+但是试试从i到k然后到j: 这时候|k - j + 1| > a[j]时, 也不行. 所以当|j - k + 1| > max(a[j], a[k])时就不能以i为起点, 观察这个公式可以得到实际上与i无关, 所以当|j - k + 1| > max(a[j], a[k])时, 所有的j < i < k的i都不能为起点
+这是条件二
+
+那么我如何确定一个位置当i是否为起点了
+对于条件一: 以i为起点, 存在其他的某个位置j满足|j - i + 1| > a[j], 即|j - i| >= a[j]时, i不能为起点
+所以|j - i| >= a[j]去掉绝对值就是当i <= j - a[j]时或者当i >= j + a[j]时, i就不能为起点. 或许我们可以使用差分数组来解决
+对于i <= j - a[j], 即区间[1, j - a[j]]范围内的所有值都不能为起点; 对于i >= j + a[j], 即区间[j + a[j], n]范围内的所有值都不能为起点
+// 首先定义一个差分数组vector<int> dif(n + 10);
+for(int i = 1; i <= n; i ++){
+    if(i - a[i] >= 1){
+        dif[1] ++;
+        dif[j - a[j] + 1] --;
+    }
+    if(j + a[j] <= n){
+        dif[j + a[j]] ++;
+        dif[n + 1] --;
+    }
+}
+
+对于条件二: |j - k + 1| > max(a[j], a[k]), 去掉max就是 |j - k + 1| > a[j] && |j - k + 1| > a[k]
+对于|j - k + 1| > a[j], 就是|j - k| >= a[j], 所以...我发现这里又要再次去掉绝对值
+不妨相当于直接枚举左端点j, 那么找到最右边的k满足k - j + 1 > max(a[j], a[k])时, 区间[j + 1, k - 1]内的所有点都不能为起点, 即dif[j + 1] ++, dif[k] --;
+所以现在就是对于枚举的左端点j, 如何找到最大的那个k: k - j >= a[j] && k - j >= a[k]
+所以就是k >= j + a[j] && k - a[k] >= j
+解决的办法是从这个k - a[k] >= j出发, 我需要的是找到最大的一个k满足k - a[k] >= j, 所以当这个k是最大的时候直接判断k >= j + a[j]是否成立!
+vector<int> max_idx(n + 10) // 这个max_idx[x]表示的就是当k - a[k] = x是的最大位置
+for(int i = 1; i <= n; i ++){
+    int x = i - a[i]; // 这里先把每一个位置的i - a[i]存下来
+    max_idx[x] = max(max_idx[x], i);
+} 
+for(int i = n; i >= 1; i --){
+    max_idx[i] = max(max_idx[i], max_idx[i + 1]); // 执行更新操作, 前面已经说了max_idx[x]表示的是当k - a[k]等于x是的最大坐标, 但是对于k - a[k] >= j, 是大于等于j的最大坐标k
+    // 所以将max_idx[x]的定义修改为当k - a[k] = x时, 大于等于x的最大坐标, 所以这么要从后向前更新
+} 
+
+但是有一个容易遗漏的问题就是i - a[i]可能为负数, i - a[i]的范围为[1 - n, n - 1], 所以我们直接加上n, 此时范围变为[1, 2 * n - 1]
+修改为: 
+vector<int> max_idx(2 * n + 10)
+for(int i = 1; i <= n; i ++){
+    int x = i - a[i] + n;
+    max_idx[x] = max(max_idx[x], i);
+}
+for(int i = 2 * n; i >= 1; i --){
+    max_idx[i] = max(max_idx[i], max_idx[i + 1]);
+}
+所以现在得到了对于每一个左端点j满足k - a[k] >= j的最远的k = max_idx[j]
+
+所以直接判断k - a[k] >= j是否成立即可
+如果成立那么区间[j + 1, k - 1]中的所以的i均不可能成为起点
+
+for(int j = 1; j <= n; j ++){
+    int pos = max_idx[j + n]; // 因为在一开始初始化max_idx[]时都加上了n, 所以这里也要加上n
+    if(pos >= j + a[j]){
+        dif[j + 1] ++;
+        dif[pos] --;
+    }
+}
+
+void solve(){
+    
+    int n; cin >> n;
+    vector<int> a(n + 10);
+    for(int i = 1; i <= n; i ++) cin >> a[i];
+    vector<int> dif(n + 10), max_idx(2 * n + 10);
+    for(int i = 1; i <= n; i ++){
+        if(i - a[i] >= 1){
+            dif[1] ++;
+            dif[i - a[i] + 1] --;
+        }
+        if(i + a[i] <= n){
+            dif[i + a[i]] ++;
+            dif[n + 1] --;
+        }
+    }
+
+    for(int i = 1; i <= n; i ++){
+        int x = i - a[i] + n;
+        max_idx[x] = max(max_idx[x], i);
+    }
+    for(int i = 2 * n; i >= 1; i --){
+        max_idx[i] = max(max_idx[i], max_idx[i + 1]);
+    }
+
+    for(int j = 1; j <= n; j ++){
+        int pos = max_idx[j + n];
+        if(pos >= j + a[j]){
+            dif[j + 1] ++;
+            dif[pos] --;
+        }
+    }
+    for(int i = 1; i <= n; i ++) dif[i] += dif[i - 1];
+    int ans = 0;
+    for(int i = 1; i <= n; i ++){
+        if(!dif[i]) ans ++;
+    }
+    cout << ans << endl;
+    return ;
+}
+//============================================================================================================================================
+https://codeforces.com/contest/2242/problem/B
+void solve(){
+    
+    int n; cin >> n;
+    vector<int> a(n + 10);
+    for(int i = 1; i <= n; i ++) cin >> a[i];
+    int cnt1 = 0, cnt2 = 0, cnt3 = 0;
+    for(int i = 1; i <= n; i ++){
+        if(i >= 2 && cnt1 >= cnt2 + cnt3 && i <= n - 1){
+            if(a[i] != 3){
+                cout << "YES" << endl;
+                return ;
+            }
+            if(cnt1 == cnt2 + cnt3){
+                cnt1 = 0, cnt2 = 0, cnt3 = 0;
+                for(int j = i; j <= n - 1; j ++){
+                    if(a[j] == 1) cnt1 ++;
+                    else if(a[j] == 2) cnt2 ++;
+                    else cnt3 ++;
+                    if(cnt1 + cnt2 >= cnt3){
+                        cout << "YES" << endl;
+                        return ;
+                    }
+                } 
+                cout << "NO" << endl;
+                return ;
+            }
+        }
+
+        if(a[i] == 1) cnt1 ++;
+        else if(a[i] == 2) cnt2 ++;
+        else cnt3 ++;
+    }
+    cout << "NO" << endl;
+    return ;
+}
+//============================================================================================================================================
