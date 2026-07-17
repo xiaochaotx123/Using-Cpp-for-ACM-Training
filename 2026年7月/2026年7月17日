@@ -1,0 +1,550 @@
+//============================================================================================================================================
+void solve(){
+    
+    string s; cin >> s;
+    if((int)s.size() != 8) cout << "Well-Being" << endl;
+    else{
+        bool ok = true;
+        for(int i = 0; i < 8; i += 2){
+            if(s[i] == 'a' || s[i] == 'e' || s[i] == 'i' || s[i] == 'o' || s[i] == 'u'){
+                ok = false;
+                break;
+            }
+        } 
+        for(int i = 1; i < 8; i += 2){
+            if(s[i] != 'a' && s[i] != 'e' && s[i] != 'i' && s[i] != 'o' && s[i] != 'u'){
+                ok = false;
+                break;
+            }
+        }
+        cout << (ok ? "Suspected Virus" : "Well-Being") << endl;
+    }
+    return ;
+}
+//============================================================================================================================================
+void solve(){
+    
+    int n; cin >> n;
+    vector<int> a(n + 10);
+    for(int i = 1; i <= n; i ++) cin >> a[i];
+
+    int ans = 0;
+    for(int i = 1; i <= n; i ++){
+        int x = (i - 1) - (n - i);
+        ans += x * a[i];
+    }
+    cout << ans << endl;
+    return ;
+}
+//============================================================================================================================================
+/*
+这道题目难评, 就是不是寻常的去找统一的构造方法, 而是一种trick
+给你一个常数n, 然后在三维空间中构造一个点集, 点集的大小最大为2 * n + 2,
+对于点集中的每一个点来说都恰好存在n个点与该点的距离为1
+题目说为了兼容精度误差, 题目设定误差的阈值ε = 0.01, 当且仅当同时满足以下条件时, 答案才会判定为正确:
+1. 对于点集中任意两个不同的点P, Q, 都有dist(P, Q) > ε (保证点不重合)
+2. 对于点集中的每一个点P, 在点集中恰好存在n个不同的点Q使得 1 - ε < dist(P, Q) < 1 + ε
+
+突破口就在上面两点里面, 因为如果直接去找任意两个点的距离恰好为1, 是无法构造(反正就是构造非常困难), 于是乎
+这个距离不能恰好当作1, 而是一个范围(1 - ε, 1 + ε), 那么题解中提供的方法就是我在z = 0的平面上构造一个圆范围在z = 1的平面上构造一个圆范围, 需要满足
+一个圆范围中的任意一个点到另外一个圆中任意一个的点的距离dist满足1 - ε < dist < 1 + ε, 这样我只需要在z = 0的圆范围中找n个点, z = 1的圆范围中找n个点且满足
+相同圆范围中的任意两个点的距离得大于ε.
+
+所以清楚题目后, 就不是一个直接构造长度为1的题目, 而是巧妙的化为了两个圆. 如何找这n个点呢?
+首先是圆的半径r, z = 0圆上的一个点到 z = 1圆上的最小距离就是1, 最大距离就是 √(1^2 + (2 * r)^2) = √(1 + 4*r^2)这个最大距离需要小于 1 + ε = 1.01
+所以可以接出来r需要小于0.070887234, 不妨直接取r = 0.07
+现在确定的两个圆的半径为0.07就可以满足z = 0圆上的一个点到 z = 1圆上的任意距离一定是大于等于1, 小于1+ε, 也就一定满足条件2
+闲杂就需要来满足条件1, 相同圆中的任意两个点的距离是大于ε, 使用网格法
+double r = 0.07;
+double dist = 0.011;
+int k = (int)(r / dist) + 1;
+
+vector<pair<double, double> > ans;
+for(int i = -k; i <= k; i ++){
+    double x = i * dist;
+    for(int j = -k; j <= k; j ++){
+        double y = j * dist;
+        if(x * x + y * y < r * r) ans.push_back({x, y});
+    }
+}
+可以理解为将这个圆做一个外接正方形, 然后将这个正放心分割成一个个边长为dist(最小距离)的小正方形, 这样任意两个点之间的距离一定大于等于dist
+然后将是在圆里面的点push到正方形中
+
+最终ans中有129个点, 是大于n = 100的这个限制, 所以可以!
+*/
+const double pi = acos(-1);
+const double r = 0.07;
+const double dist = 0.011;
+
+void solve(){
+    
+    int n; cin >> n;
+    cout << 2 * n << endl;
+    vector<pair<double, double> > ans;
+
+    int k = (int)(r / dist) + 1;
+    for(int i = -k; i <= k; i ++){
+        double x = i * dist;
+        for(int j = -k; j <= k; j ++){
+            double y = j * dist;
+            if(x * x + y * y < r * r) ans.push_back({x, y});
+        }
+    }
+
+    for(int i = 0; i < n; i ++){
+        cout << fixed << setprecision(9) << ans[i].first << " " << ans[i].second << " " << 0 << endl;
+        cout << fixed << setprecision(9) << ans[i].first << " " << ans[i].second << " " << 1 << endl;
+    }
+    return ;
+}
+
+/*
+这道题还有一个更巧妙的方法：就是依旧是两个平面，但是他们之间的距离是0.991，比1-ε大0.001，意思是这两个平面上的最短距离是0.991是比1-ε大的，即min_dist > 1 - ε
+因为n最大为100，所以我们构建一个10 * 10大小的小点，相邻点之间的距离设置为0.101，这样满足的任意两点之间的距离大于0.1
+依旧是两个平面上各自有n个点
+现在已经满足的条件是各自平面中的点的距离都是大于0.1的；一个平面上的任意一个点到另外一个平面上任意一个点的最小距离是0。991，是比0.99大的
+所以现在需要的就是让一个平面上的点到另外一个平面上n个点的最大距离小于1+ε=1.01
+现在计算一下：最大距离是√((9 * 0.0101)^2 + (9 * 0.0101)^2 + 0.991^2) = 0.9993030671，这是最大距离是小于1.01的！
+所以一定满足条件
+代码：
+
+
+*/
+
+//============================================================================================================================================
+/*
+#include<bits/stdc++.h>
+using namespace std;
+
+#define endl '\n'
+#define int long long
+#define IOS ios::sync_with_stdio(false);cin.tie(NULL);cout.tie(NULL);
+#define HelloWorld IOS;
+const bool HAVE_CASE = true;
+
+
+bool cmp(pair<int, int> a, pair<int, int> b){
+    return a.second < b.second;
+}
+
+
+int get_type(vector<pair<int, int> > v){
+    int type = 1;
+    
+    if(type < 10){
+        bool ok = true;
+        for(int i = 0; i < 5; i ++){
+            if(v[i].second == i + 10) continue;
+            else ok = false;
+        }
+        if(ok){
+            bool ok1 = true;
+            for(int i = 0; i < 5; i ++){
+                if(v[i].first == v[0].first) continue;
+                else ok1 = false;
+            }
+            if(ok1) type = 10;
+            else type = 5;
+        }
+    }
+
+    if(type < 9){
+        bool ok = true;
+        for(int i = 0; i < 5; i ++){
+            if(v[i].second != v[0].second + i){
+                ok = false;
+                break;
+            }
+        }
+        if(ok){
+            bool ok1 = true;
+            for(int i = 0; i < 5; i ++){
+                if(v[i].first != v[0].first){
+                    ok1 = false;
+                }
+            }
+            if(ok1) type = 9;
+            else type = 5;
+        }
+    }
+
+    if(type < 8){
+        if(v[0].second == v[3].second || v[1].second == v[4].second) type = 8;
+    }
+
+    if(type < 7){
+        if(v[0].second == v[2].second && v[3].second == v[4].second) type = 7;
+        if(v[0].second == v[1].second && v[2].second == v[4].second) type = 7;
+    }
+
+    if(type < 6){
+        bool ok = true;
+        for(int i = 0; i < 5; i ++){
+            if(v[i].first != v[0].first){
+                ok = false;
+                break;
+            }
+        }
+        if(ok) type = 6;
+    }
+
+    if(type < 5){
+        bool ok = true;
+        for(int i = 0; i < 5; i ++){
+            if(v[i].second != v[0].second + i){
+                ok = false;
+                break;
+            }
+        }
+        if(ok) type = 5;
+    }
+
+    if(type < 4){
+        bool ok = false;
+        for(int i = 0; i < 3; i ++){
+            if(v[i].second == v[i + 2].second){
+                ok = true;
+                break;
+            }
+        }
+        if(ok) type = 4;
+    }
+
+    if(type < 3){
+        int cnt = 0;
+        for(int i = 1; i < 5; i ++){
+            if(v[i].second == v[i - 1].second){
+                cnt ++;
+                i ++;
+            }
+        }
+        if(cnt == 2) type = 3;
+    }
+
+    if(type < 2){
+        for(int i = 1; i < 5; i ++){
+            if(v[i].second == v[i - 1].second){
+                type = 2;
+                break;
+            }
+        }
+    }
+
+    return type;
+}
+
+
+bool check(vector<pair<int, int> > v, vector<pair<int, int> > vv, pair<int, int> max_pai, pair<int, int> now_pai){
+    int max_type = 1, now_type = 1;
+    
+    vector<pair<int, int> > max_v = v;
+    vector<pair<int, int> > now_v = vv;
+    max_v.push_back(max_pai);
+    now_v.push_back(now_pai);
+    sort(max_v.begin(), max_v.end(), cmp);
+    sort(now_v.begin(), now_v.end(), cmp);
+    
+    max_type = get_type(max_v);
+    now_type = get_type(now_v);
+
+    if(max_type == now_type){
+        for(int i = 4; i >= 0; i --){
+            if(max_v[i].second != now_v[i].second){
+                if(max_v[i].second >= now_v[i].second) return false;
+                else return true;
+            }
+        }
+        return false;
+    }
+    else{
+        if(max_type > now_type) return false;
+        else return true;
+    }
+}
+void solve(){
+    
+    vector<pair<int, int> > v1, v2;
+    vector<vector<bool> > vis(20, vector<bool> (5));
+    // vis[i][0] 表示C, vis[i][1]表示D, vis[i][2]表示H, vis[i][3]表示S
+    for(int i = 1; i <= 4; i ++){
+        char huase, pai; cin >> pai >> huase;
+
+        int num = 0;
+        if('2' <= pai && pai <= '9') num = pai - '0';
+        else if(pai == 'T') num = 10;
+        else if(pai == 'J') num = 11;
+        else if(pai == 'Q') num = 12;
+        else if(pai == 'K') num = 13;
+        else num = 14;
+        if(huase == 'C') vis[num][0] = 1, v1.push_back({0, num});
+        else if(huase == 'D') vis[num][1] = 1, v1.push_back({1, num});
+        else if(huase == 'H') vis[num][2] = 1, v1.push_back({2, num});
+        else vis[num][3] = 1, v1.push_back({3, num});
+    }
+
+    for(int i = 1; i <= 4; i ++){
+        char huase, pai; cin >> pai >> huase;
+
+        int num = 0;
+        if('2' <= pai && pai <= '9') num = pai - '0';
+        else if(pai == 'T') num = 10;
+        else if(pai == 'J') num = 11;
+        else if(pai == 'Q') num = 12;
+        else if(pai == 'K') num = 13;
+        else num = 14;
+        if(huase == 'C') vis[num][0] = 1, v2.push_back({0, num});
+        else if(huase == 'D') vis[num][1] = 1, v2.push_back({1, num});
+        else if(huase == 'H') vis[num][2] = 1, v2.push_back({2, num});
+        else vis[num][3] = 1, v2.push_back({3, num});
+    }  
+    
+    sort(v1.begin(), v1.end(), cmp);
+    sort(v2.begin(), v2.end(), cmp);
+    
+    pair<int, int> max_pai = {0, 0};
+    for(int i = 2; i <= 14; i ++){
+        for(int j = 0; j <= 3; j ++){
+            if(vis[i][j]) continue; 
+            if(max_pai.first == 0){
+                max_pai = {j, i};
+                continue;
+            }
+            if(check(v2, v2, max_pai, {j, i})) max_pai = {j, i};
+        }
+    }
+    
+    pair<int, int> my_pai1 = {0, 0}, my_pai2 = {0, 0};
+
+    for(int i = 2; i <= 14; i ++){
+        for(int j = 0; j <= 3; j ++){
+            if(vis[i][j]) continue; 
+            if(my_pai1.first == 0){
+                my_pai1 = {j, i};
+                continue;
+            }
+            if(check(v1, v1, my_pai1, {j, i})) my_pai1 = {j, i};
+        }
+    }    
+    vis[my_pai1.second][my_pai1.first] = 1;
+
+    for(int i = 2; i <= 14; i ++){
+        for(int j = 0; j <= 3; j ++){
+            if(vis[i][j]) continue; 
+            if(my_pai2.first == 0){
+                my_pai2 = {j, i};
+                continue;
+            }
+            if(check(v1, v1, my_pai2, {j, i})) my_pai2 = {j, i};
+        }
+    }     
+
+    if(max_pai == my_pai1){
+        if(check(v2, v1, max_pai, my_pai2)){
+            v2.push_back(max_pai);
+            v1.push_back(my_pai2);
+            sort(v1.begin(), v1.end(), cmp);
+            sort(v2.begin(), v2.end(), cmp);
+            for(int i = 0; i < 5; i ++){
+                if(v1[i].second != v2[i].second){
+                    if(v1[i].second > v2[i].second) cout << "WoYaoYanPai" << endl;
+                    else cout << "GeiWoCaPiXie" << endl;
+                    return ;
+                }
+            }
+            cout << "PaiMeiYouWenTi" << endl;
+        }
+        else cout << "GeiWoCaPiXie" << endl;
+    }   
+    else{
+        if(check(v2, v1, max_pai, my_pai1)){
+            v2.push_back(max_pai);
+            v1.push_back(my_pai2);
+            sort(v1.begin(), v1.end(), cmp);
+            sort(v2.begin(), v2.end(), cmp);
+            for(int i = 0; i < 5; i ++){
+                if(v1[i].second != v2[i].second){
+                    if(v1[i].second > v2[i].second) cout << "WoYaoYanPai" << endl;
+                    else cout << "GeiWoCaPiXie" << endl;
+                    return ;
+                }
+            }
+            cout << "PaiMeiYouWenTi" << endl;
+        }
+        else cout << "GeiWoCaPiXie" << endl;        
+    }
+    return ;
+}
+
+signed main(){
+    HelloWorld;
+
+    int tt = 1; 
+    if(HAVE_CASE) cin >> tt;
+    while(tt --) solve();
+    return 0;
+}
+自己写的勾石
+*/
+
+
+#include<bits/stdc++.h>
+using namespace std;
+
+#define endl '\n'
+#define int long long
+#define IOS ios::sync_with_stdio(false);cin.tie(NULL);cout.tie(NULL);
+#define HelloWorld IOS;
+const bool HAVE_CASE = true;
+
+map<int, int> ma;
+
+void init(){
+    for(int i = 2; i <= 9; i ++){
+        ma['0' + i] = i;
+    }
+    ma['T'] = 10, ma['J'] = 11, ma['Q'] = 12, ma['K'] = 13, ma['A'] = 14;
+    ma['C'] = 1, ma['D'] = 2, ma['H'] = 3, ma['S'] = 4;
+}
+
+bool same_color(vector<pair<int, int> > a){
+    for(int i = 1; i < 5; i ++){
+        if(a[i].second != a[0].second) return false;
+    }
+    return true;
+}
+
+vector<int> judge_level(vector<pair<int, int> > a){
+    auto b = a;
+    sort(b.begin(), b.end(), greater<pair<int, int> >());
+    if(same_color(b)){
+        bool ok = true;
+        for(int i = 0; i < 5; i ++){
+            if(b[i].first + i != 14){
+                ok = false;
+                break;
+            }
+        }
+        if(ok) return {10, 14};
+    }
+
+    if(same_color(b)){
+        bool ok = true;
+        for(int i = 2; i < 5; i ++){
+            if(b[i].first != b[i - 1].first - 1){
+                ok = false;
+                break;
+            }
+        }
+        if(ok && b[0].first == b[1].first + 1) return {9, b[0].first};
+        if(ok && b[0].first == 14 && b[1].first == 5) return {9, 5};
+    }
+
+    if(b[0].first == b[3].first) return {8, b[0].first, b[4].first};
+    if(b[1].first == b[4].first) return {8, b[1].first, b[0].first};
+
+    if(b[0].first == b[2].first && b[3].first == b[4].first) return {7, b[0].first, b[3].first};
+    if(b[0].first == b[1].first && b[2].first == b[4].first) return {7, b[2].first, b[0].first};
+
+    if(same_color(b)) return {6, b[0].first, b[1].first, b[2].first, b[3].first, b[4].first};
+    
+    {   
+        bool ok = true;
+        for(int i = 2; i < 5; i ++){
+            if(b[i].first != b[i - 1].first - 1){
+                ok = false;
+                break;
+            }
+        }
+        if(ok && b[0].first == b[1].first + 1) return {5, b[0].first};
+        if(ok && b[0].first == 14 && b[1].first == 5) return {5, 5};
+    }
+
+    if(b[0].first == b[2].first) return {4, b[0].first, b[3].first, b[4].first};
+    if(b[1].first == b[3].first) return {4, b[1].first, b[0].first, b[4].first};
+    if(b[2].first == b[4].first) return {4, b[2].first, b[0].first, b[1].first};
+
+
+    if(b[0].first == b[1].first && b[2].first == b[3].first) return {3, b[0].first, b[2].first, b[4].first};
+    if(b[0].first == b[1].first && b[3].first == b[4].first) return {3, b[0].first, b[3].first, b[2].first};
+    if(b[1].first == b[2].first && b[3].first == b[4].first) return {3, b[1].first, b[3].first, b[0].first};
+    
+    if(b[0].first == b[1].first) return {2, b[0].first, b[2].first, b[3].first, b[4].first};
+    if(b[1].first == b[2].first) return {2, b[1].first, b[0].first, b[3].first, b[4].first};
+    if(b[2].first == b[3].first) return {2, b[2].first, b[0].first, b[1].first, b[4].first};
+    if(b[3].first == b[4].first) return {2, b[3].first, b[0].first, b[1].first, b[2].first};
+
+    return {1, b[0].first, b[1].first, b[2].first, b[3].first, b[4].first};
+
+    // 嗯, 直接返回大小级，还可以直接比较（✔）
+}
+void solve(){
+    vector<pair<int, int> > p1, p2;
+    set<pair<int, int> > st;
+    for(int i = 1; i <= 4; i ++){
+        string s; cin >> s;
+        pair<int, int> x = {ma[s[0]], ma[s[1]]};
+        st.insert(x);
+        p1.push_back(x);
+    }
+
+    for(int i = 1; i <= 4; i ++){
+        string s; cin >> s;
+        pair<int, int> x = {ma[s[0]], ma[s[1]]};
+        st.insert(x);
+        p2.push_back(x);
+    }
+
+    map<pair<int, int>, vector<int> > p22;
+    for(int i = 1; i <= 4; i ++){
+        for(int j = 2; j <= 14; j ++){
+            pair<int, int> x = {j, i};
+            if(st.count(x)) continue;
+            p2.push_back(x);
+            p22[x] = judge_level(p2);
+            p2.pop_back(); 
+        }
+    }
+    map<pair<int, int>, vector<int> > p11;
+
+    for(int i = 1; i <= 4; i ++){
+        for(int j = 2; j <= 14; j ++){
+            pair<int, int> x = {j, i};
+            if(st.count(x)) continue;
+            p1.push_back(x);
+            p11[x] = judge_level(p1);
+            p1.pop_back();
+        }
+    }
+
+    int count = 0;
+    for(auto [x, v1] : p22){
+        int time1 = 0, time2 = 0;
+        for(auto [y, v2] : p11){
+            if(x == y) continue;
+            if(v1 > v2) time1 ++;
+            if(v1 < v2){
+                time2 ++;
+                break;
+            }
+        }
+        if(time1 == 43){
+            cout << "GeiWoCaPiXie" << endl;
+            return ;
+        }
+        if(time2) count ++;
+    }
+    if(count == 44) cout << "WoYaoYanPai" << endl;
+    else cout << "PaiMeiYouWenTi" << endl;
+    return ;
+}
+
+signed main(){
+    HelloWorld;
+
+    init();
+    int tt = 1; 
+    if(HAVE_CASE) cin >> tt;
+    while(tt --) solve();
+    return 0;
+}
+//============================================================================================================================================
