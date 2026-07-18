@@ -422,3 +422,74 @@ void solve(){
     return ;
 }
 //============================================================================================================================================
+/*
+https://codeforces.com/contest/2247/problem/A
+*/
+void solve(){
+
+    int n; cin >> n;
+    vector<int> a(n + 10);
+    int total = 0;
+    for(int i = 1; i <= n; i ++) cin >> a[i], total += a[i];
+    if(total % 4 == 0) cout << "YES" << endl;
+    else cout << "NO" << endl;
+
+    return ;
+}
+//============================================================================================================================================
+/*
+https://codeforces.com/contest/2247/problem/B
+*/
+void solve(){
+
+    int n, k, m; cin >> n >> k >> m;
+    if(k > m) cout << "NO" << endl;
+    else{
+        cout << "YES" << endl;
+        vector<int> a(k);
+        for(int i = 0; i < k - 1; i ++) a[i] = 1;
+        a[k - 1] = m - (k - 1);
+        for(int i = 0; i < n; i ++) cout << a[i % k] << " ";
+        cout << endl;
+    }
+    return ;
+}
+//============================================================================================================================================
+/*
+https://codeforces.com/contest/2247/problem/C
+*/
+void solve(){
+
+    int n; cin >> n;
+    vector<int> a(n + 10), b(n + 10);
+    for(int i = 1; i <= n; i ++) cin >> a[i];
+    for(int i = 1; i <= n; i ++) cin >> b[i];
+
+    int cnt01 = 0, cnt10 = 0;
+    for(int i = 1; i <= n; i ++){
+        if(a[i] != b[i]){
+            if(a[i] == 0) cnt01 ++;
+            else cnt10 ++;
+        }
+    }
+    if(cnt10){
+        if(cnt10 & 1) cout << 1 << endl;
+        else cout << 2 << endl;
+    }
+    else{
+        if(cnt01){
+            bool ok1 = false, ok2 = false;
+            for(int i = 1; i <= n; i ++){
+                if(a[i] == b[i]){
+                    if(a[i] == 0) ok1 = true;
+                    else ok2 = true;
+                }
+            }
+            if(ok1 && ok2) cout << 2 << endl;
+            else cout << -1 << endl;
+        }
+        else cout << 0 << endl;
+    }
+    return ;
+}
+//============================================================================================================================================
