@@ -1,0 +1,255 @@
+//============================================================================================================================================
+/*
+https://codeforces.com/contest/1905/problem/D
+知识点：思维
+题意：对于一个长度为n的数组a[]，现在可以对它向左循环移动，比如
+    a[1], a[2], a[3], a[4], a[5]向左循环移动一位为 a[2], a[3], a[4], a[5], a[1]
+    现在当前数组的贡献为mex(a[1]) + mex(a[1], a[2]) + ...mex(a[1], a[2], ... a[n - 1]) + mex(a[1], a[2], ..., a[n - 1], a[n])的和
+    然后求所有循环数组中的最大的一个贡献为多少
+解决：对于现在的数组a[1], a[2], a[3], a[4], a[5]来说，如果向左循环一次变为
+    a[2], a[3], a[4], a[5], a[1].
+    那么首先第一个mex(a[1])就消失了，对于其他原来的mex(a[1], a[2]), mex(a[1], a[2], a[3])....来说有：
+    如果其原来的mex大于等于a[1], 那么就会变为a[1]
+    如果其原来的mex小于a[1], 那么就会不变
+    然后最后添加上一个新的mex = n
+    对于上面的过程可以使用双端队列来模拟这个过程
+
+    int n; cin >> n;
+    vector<int> a(n + 10);
+    for(int i = 1; i <= n; i ++) cin >> a[i];
+
+    首先定义deque<pair<int, int> > dq;
+    需要将每一个位置的mex以及数量插入进入
+    int mex = 0;
+    vector<int> ma(n + 10);
+    for(int i = 1; i <= n; i ++){
+        ma[a[i]] ++;
+        while(ma[mex]) mex ++;
+        dq.push_back({mex, 1});
+    }
+    这样就将每个位置的前缀mex以及数量放入进去了
+    然后将a[1]放入后面
+    《因为dq放入的是前缀mex，所以是单调不递减的，我们只需要从后面往前面更新即可！》
+    while(dq.size() && dq.back().first >= a[i]){
+        sum -= dq.back().first * dq.back().second;
+        dq.pop_back();
+    }
+    然后我还需要记录我现在a[1]的信息
+    下面就是一部分代码：
+    pair<int, int> me = {a[i], 0};
+    sum -= dq.front().first;
+    dq.front().second --;
+    if(!dq.front().second) dq.pop_front();
+    while(dq.size() && dq.back().first >= a[i]){
+        sum -= dq.back().first * dq.back().second;
+        me.second += dq.back().second;
+        q.pop_back();
+    }
+    dq.push_back(me);
+    sum += me.first * me.second;
+    《最后需要插入一个mex = n，数量为1》
+    dq.push_back({n, 1});
+    sum += n;
+    ans = max(ans, sum);
+*/
+void solve(){
+
+    int n; cin >> n;
+    vector<int> a(n + 10);
+    for(int i = 1; i <= n; i ++) cin >> a[i];
+    int ans = 0, sum = 0, mex = 0;
+    deque<pair<int, int> > dq;
+    vector<int> ma(n + 10);
+    for(int i = 1; i <= n; i ++){
+        ma[a[i]] ++;
+        while(ma[mex]) mex ++;
+        dq.push_back({mex, 1});
+        sum += mex;
+    }    
+    ans = sum;
+
+    for(int i = 1; i <= n - 1; i ++){
+        pair<int, int> me = {a[i], 0};
+
+        sum -= dq.front().first;
+        dq.front().second --;
+        if(!dq.front().second) dq.pop_front();
+
+        while(dq.size() && dq.back().first >= a[i]){
+            sum -= dq.back().first * dq.back().second;
+            me.second += dq.back().second;
+            dq.pop_back();
+        }
+        dq.push_back(me);
+        sum += me.first * me.second;
+        dq.push_back({n, 1});
+        sum += n;
+        ans = max(ans, sum);
+    }
+
+    cout << ans << endl;
+    return ;
+}
+//============================================================================================================================================
+/*
+https://codeforces.com/contest/1905/problem/A
+*/
+void solve(){
+
+    int n, m; cin >> n >> m;
+    cout << max(n, m) << endl;
+    return ;
+}
+//============================================================================================================================================
+/*
+https://codeforces.com/problemset/problem/1905/B
+*/
+void solve(){
+
+    int n; cin >> n;
+    vector<int> deg(n + 10);
+    for(int i = 1; i <= n - 1; i ++){
+        int u, v; cin >> u >> v;
+        deg[u] ++;
+        deg[v] ++;
+    }
+    int ans = 0;
+    for(int i = 1; i <= n; i ++){
+        if(deg[i] == 1) ans ++;
+    }
+    cout << (ans + 1) / 2 << endl;
+    return ;
+}
+//============================================================================================================================================
+/*
+https://codeforces.com/contest/1905/problem/C
+题目的意思就是不断找字符串中字典序最大的一个子序列，然后进行一次循环右移操作
+求最少操作多少次可以使得字符串升序操作，或者输出-1表示无法使得字符串升序
+
+问题：如果快速求字典序最大的一个子序列？
+    直接倒着处理：维护当前遇到的最大的字符，如果时大于等于就加进来
+    vector<char> max_char;
+    for(int i = n; i >= 1; i --){
+        if(!max_char.size()) max_char.push_back(a[i]);
+        else if(a[i] >= max_char.back()) max_char.push_back(a[i]);
+    }
+    所以：《一个字符串的字典序最大的一个子序列一定包含字符串的最后一个字符！》
+
+现在求出了字典序最大的一个字符列后，进行一次循环右移
+移动后变为s[n], s[1], s[2], ..., s[n - 1]
+这时候字典序最大的一个子序列是s[1], s[2], s[3], ..., s[n - 1]
+然后再次循环右移，那么为s[n - 1], s[1], s[2], s[3], ..., s[n - 2]
+所以时间上到最后就只有一个s[1]
+《然后整个字典序最大的子序列就相当于直接翻转了！》
+一开始的s[1], s[2], ..., s[n]变为了s[n], s[n - 1], ..., s[2], s[1]!
+所以现在只需要判断反转后，整个字符串是不是升序即可
+如果不是，直接输出-1
+否则求循环右移的次数，就是字典序最大的子序列的长度 - 1
+
+然而wrong answer了，原因是比如最大子序列是 z z b a
+那么需要循环右移的操作次数是3次吗，实际上只循环移动了2次变为a b z z
+也就是说最后最大的那个字符不需要循环移动，直接就截至了，所以还得减去最大的字符个数 - 1
+那么最终答案是 len - 1 - (cnt - 1) = len - cnt
+len: 字典序最大的子序列的长度
+cnt: 最大的字符的个数
+*/
+void solve(){
+
+    int n; cin >> n;
+    vector<char> a(n + 10);
+    for(int i = 1; i <= n; i ++) cin >> a[i];
+
+    vector<char> max_char;
+    for(int i = n; i >= 1; i --){
+        if(!max_char.size()) max_char.push_back(a[i]);
+        else if(a[i] >= max_char.back()) max_char.push_back(a[i]);
+    }
+    reverse(max_char.begin(), max_char.end());
+
+    vector<int> vis(n + 10);
+    int idx = 0;
+    for(int i = 1; i <= n; i ++){
+        if(a[i] == max_char[idx]){
+            vis[i] = 1;
+            idx ++;
+        }
+    }
+
+    int cnt = 0;
+    for(int i = 0; i < max_char.size(); i ++){
+        if(max_char[i] == max_char[0]) cnt ++;
+        else break;
+    }
+    // for(char sh : max_char) cout << sh << " ";
+    // cout << endl;
+
+    idx = 0;
+    reverse(max_char.begin(), max_char.end());
+    
+    for(int i = 1; i <= n; i ++){
+        if(vis[i]) a[i] = max_char[idx ++];
+    }
+    
+    for(int i = 1; i <= n - 1; i ++){
+        if(a[i] > a[i + 1]){
+            cout << "-1" << endl;
+            return ;
+        }
+    }
+
+    cout << (int)max_char.size() - cnt << endl;
+    return ;
+}
+//============================================================================================================================================
+/*
+https://atcoder.jp/contests/abc404/tasks/abc404_d
+题目不难，但是对于dfs还是欠缺，这可是非常基础的dfs啊，啊，啊！
+首先题目的数据范围非常小，非常适合使用dfs求解，一共只有n <= 10个动物园，直接dfs每一个动物园可以游览的次数0，1，2
+不会大于等于3，因为题目说了至少两次即可，所以一个动物园最多只会浏览2次
+*/
+const int N = 20;
+const int M = 120;
+
+int n, m;
+int ans = 1000000000000000000;
+int a[N], cnt[N];
+vector<int> adj[M];
+
+
+void dfs(int step, int cost){
+    if(step == n + 1){
+        for(int i = 1; i <= m; i ++){
+            int now_cnt = 0;
+            for(int pos : adj[i]){
+                now_cnt += cnt[pos];
+            }
+            if(now_cnt < 2) return;
+        }
+        ans = min(ans, cost);
+        return ;
+    }
+
+    for(int i = 0; i <= 2; i ++){
+        int nex_cost = cost + i * a[step];
+        if(nex_cost >= ans) return ;
+        cnt[step] = i;
+        dfs(step + 1, nex_cost);
+        cnt[step] = 0;
+    }
+}
+void solve(){
+
+    cin >> n >> m;
+    for(int i = 1; i <= n; i ++) cin >> a[i];
+    for(int i = 1; i <= m; i ++){
+        int k; cin >> k;
+        for(int j = 1; j <= k; j ++){
+            int pos; cin >> pos;
+            adj[i].push_back(pos);
+        }
+    }    
+    dfs(1, 0);
+    cout << ans << endl;
+    return ;
+}
+//============================================================================================================================================
