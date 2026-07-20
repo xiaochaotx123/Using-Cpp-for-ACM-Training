@@ -1,0 +1,583 @@
+//============================================================================================================================================
+/*
+https://atcoder.jp/contests/abc405/tasks/abc405_e?lang=en
+挺考验数学推导能力的
+
+给你A个苹果，B个橙子，C个香蕉，D葡萄
+现在将这A + B + C + D个水果排成一行，要求：
+每个苹果都放在每根香蕉的左边
+每个苹果都放在每个葡萄的左边
+每个桔子都放在每个葡萄的左边
+
+说白了就是AC，AD，BD这样子
+
+那么有下面这几种排列方式：
+A B C D
+A B D C
+B A C D
+B A D C
+A C B D
+
+关键点就是B这个水果可以放的位置，既可以放在前面和A组成一部分，也可以放在后面与C和D组成一部分
+明锐的观察到：前面就是AB可以随便排列，那么排列的组合数为C(A + B, B)
+后面BCD组成的排列方式为 B C D, C B D, B D C，因为B必须在D的左边，所以实际上只要C的位置确定了，那么B和D的位置就确定了
+所以排列的组合数为C(B + C + D, C);
+
+所以只需要枚举B的数量就可以了，因为可以一部分在AB中，一部分在BCD中
+
+但是错了！
+原因是重复了，虽然我定义的是前面有i个橘子和A混合排列，但是如果最后一个位置为橘子 与 后面BCD - i混合排列时第一个位置为橘子会重复！
+比如(A)(B C D)和(A B)(B C D)重复了！
+所以前面面C(A + B, B)修改为C(A + B - 1, B)表示最后一个位置放苹果，然后剩下的A + B - 1个位置随便选B个位置放橘子
+*/
+const int N = 4000000 + 100;
+const int mod = 998244353;
+
+int A, B, C, D;
+int f[N];
+int n;
+
+
+int ksm(int a, int b, int p){
+    int sum = 1;
+    while(b){
+        if(b & 1) sum = (sum * a) % p;
+        b >>= 1;
+        a = (a * a) % p;
+    }
+    return sum;
+}
+int get_C(int a, int b){
+    int fz = f[a];
+    int fm1 = ksm(f[b], mod - 2, mod);
+    int fm2 = ksm(f[a - b], mod - 2, mod);
+    int fm = (fm1 * fm2) % mod;
+    int sum = (fz * fm) % mod;
+    return sum;
+}
+void solve(){
+
+    cin >> A >> B >> C >> D;
+    int ans = 0;
+    for(int i = 0; i <= B; i ++){
+        int sum1 = get_C(A + i - 1, i);
+        int sum2 = get_C(B + C + D - i, C);
+        ans = (ans + (sum1 * sum2) % mod) % mod;
+    }
+    cout << ans << endl;
+    return ;
+}
+//============================================================================================================================================
+/*
+https://atcoder.jp/contests/abc404/tasks/abc404_e
+知识点：思维，贪心
+
+分配豆子的贪心：
+第一点：放豆子肯定是全部放入一个碗中，当然可以放入几个碗中，但是没有必要
+第二点：如果放入豆子，选择放入已经有豆子的碗中和放入没有豆子的碗中优先选择已有豆子的碗中
+    因为原来已经有豆子的碗本来就需要操作，这时候放入该碗中顺势而为
+    如果选择没有豆子的碗中，需要新开一条路线经行操作
+第三点：第二点是有豆子的碗就放入有豆子的碗中，如果全都没有豆子，那么需要贪心的去选择一个最优的空碗，就是
+    选择[i - c[i], i - 1]中的j满足 j - c[j]最小的那个空碗！
+*/
+void solve(){
+
+    int n; cin >> n;
+    vector<int> c(n), a(n);
+    for(int i = 1; i < n; i ++) cin >> c[i];
+    for(int i = 1; i < n; i ++) cin >> a[i];
+    
+    int ans = 0;
+    for(int i = n - 1; i >= 1; i --){
+        if(!a[i]) continue;
+
+        if(i - c[i] == 0){
+            ans ++;
+            continue;
+        }
+        int total_sum = 0;
+        for(int j = i - c[i]; j <= i - 1; j ++) total_sum += a[j];
+        if(total_sum){
+            for(int j = i - c[i]; j <= i - 1; j ++){
+                if(a[j]){
+                    a[j] += a[i];
+                    ans ++;
+                    break;
+                }
+            }
+        }
+        else{
+            int min_pos = (i - 1) - c[i - 1], now_pos = i - 1;
+            for(int j = i - c[i]; j <= i - 1; j ++){
+                if(min_pos > j - c[j]){
+                    min_pos = j - c[j];
+                    now_pos = j;
+                }
+            }
+            a[now_pos] += a[i];
+            ans ++;
+        }
+    }
+    cout << ans << endl;
+    return ;
+}
+//============================================================================================================================================
+/*
+https://atcoder.jp/contests/abc405/tasks/abc405_f
+将区间转化为点，如果区间a包含区间b，呢么a就是b的父亲节点
+
+现在实线[a, b],虚线[c, d]，其实a，b一定都是偶数，c，d一定都是奇数
+然后满足实现与虚线相交的条件是a < c < b < d或c < a < d < b
+将区间转化为点后，设包含c点最小的区间是u，包含d点最小的区间是v，那么答案就是包含u且不包含v的区间个数 + 包含区间v但不包含区间u的区间个数
+实际上，使用将区间转化为点，如果区间a包含区间b，呢么a就是b的父亲节点这样的方式建边后，答案就是dist[u] + dist[v] - dist[LCA(u, v)]
+
+使用栈类似于括号匹配的方式建图：
+
+stack<int> sta;
+sta.push(0) /0是虚拟根
+
+for(int i = 1; i <= 2 * n; i ++){
+    if(!id[i]) continue;  /i 这个点不是区间的点的边界，所以直接跳过（相当于没有使用）
+    
+    if(i & 1){
+        /是奇数，直接找包含该点的最小的区间，即 sta.top()
+        min_cov[i] = sta.top();
+    }
+    else{
+        /是偶数，现在就判断sta.top() 是不是等于 id[i]
+        /如果等于，说明直接就是一个区间，然后将sta.top()删除，然后新的sta.top()就是包含该区间的最小区间
+        /如果不等于，就将cur加入到栈中
+        int cur = id[i];
+        if(cur == sta.top()){
+            sta.pop();
+            int p = sta.top();
+            adj[p].push_back(cur);
+            adj[cur].push_back(p);
+        }
+        else sta.push(cur);
+    }
+}
+
+剩下的就是LCA基操
+*/
+const int N = 2000000 + 100;
+const int M = 25;
+int n, m;
+
+int id[N];
+int min_cov[N], depth[N];
+int st[N][M];
+vector<int> adj[N];
+
+void dfs(int u, int fa, int dep){
+    depth[u] = dep;
+    st[u][0] = fa;
+    for(int v : adj[u]){
+        if(v == fa) continue;
+        dfs(v, u, dep + 1);
+    }
+}
+
+int LCA(int u, int v){
+    if(depth[u] < depth[v]) swap(u, v);
+    int dif = depth[u] - depth[v];
+    for(int i = M - 1; i >= 0; i --){
+        if((dif >> i) & 1) u = st[u][i];
+    }
+    if(u == v) return u;
+
+    for(int i = M - 1; i >= 0; i --){
+        if(st[u][i] != st[v][i]){
+            u = st[u][i];
+            v = st[v][i];
+        }
+    }
+    return st[u][0];
+}
+
+void solve(){
+
+    cin >> n >> m;    
+    for(int i = 1; i <= m; i ++){
+        int a, b; cin >> a >> b;
+        id[a] = id[b] = i;
+    }
+    stack<int> sta;
+    sta.push(0);
+
+    for(int i = 1; i <= 2 * n; i ++){
+        if(i & 1) min_cov[i] = sta.top();
+        else{
+            if(!id[i]) continue;
+            int cur = id[i];
+            if(cur == sta.top()){
+                sta.pop();
+                int fa = sta.top();
+                adj[cur].push_back(fa);
+                adj[fa].push_back(cur);
+            }
+            else sta.push(cur);
+        }
+    }
+
+    dfs(0, 0, 1);
+    for(int j = 1; j < M; j ++){
+        for(int i = 0; i <= m; i ++){
+            st[i][j] = st[st[i][j - 1]][j - 1];
+        }
+    }
+
+    int q; cin >> q;
+    while(q --){
+        int l, r; cin >> l >> r;
+        int u = min_cov[l], v = min_cov[r];
+        int p = LCA(u, v);
+        cout << depth[u] + depth[v] - 2 * depth[p] << endl;
+    }
+    return ;
+}
+//============================================================================================================================================
+/*
+https://codeforces.com/problemset/problem/1905/E
+类似于线段树的一棵树，然后找所有叶子节点的非空子集的LCA的之和
+例如当n = 3时
+                [1, 3](1)
+        [1, 2](2)          [3, 3](3)
+    [1, 1](4)  [2, 2](5)
+所以答案时{4}, {5}, {3}, {4, 5}, {3, 4}, {3, 5}, {3, 4, 5} = 4 + 5 + 3 + 2 + 1 + 1 + 1 = 17
+
+没有思路，做不出来~
+原因是所有叶子节点的非空子集很有是2的幂次方个，而对于每一个非空子集的LCA又不知道怎么求
+
+第一点：正难则反，正面不好思考众多个非空子集对应的Lca，我们考虑对于每一个节点作为Lca的次数
+    设该节点为u，他的左子树中有l个叶子节点，右子树中有r个叶子节点，那么节点u作为Lca的条件就是左子树中至少选取一个叶子节点并且右子树中之手选取一个叶子节点
+    所以方案数就是(2^l - 1) × (2^r - 1)
+    那么节点u对答案的贡献就是 u × (2^l - 1) × (2^r - 1)
+所以如何求某个节点左子树有多少个叶子节点呢？
+因为n最大为10的18次方，又该如何统计答案呢？
+
+第二点：如果直接递归建树，遍历每一个节点的计算贡献，时间复杂度时O(n)，n最大为10的18次方，超时
+    《线段树中，不同区间的长度的数量只有O(log(n))种。因为每次分裂，长度要么是(len + 1) / 2, 要么是len / 2
+    所以，递归下去最多只有2log(n)不同的长度》
+
+第三点：长度相同的区间只有编号不同，可以一起计算
+    f[x] 表示长度为x的区间的编号的总和
+    g[x] 表示长度为x的区间有多少个
+    根节点长度为n，编号为1，所以长度为n的编号总和为1，且只有1个
+    所以f[n] = g[n] = 1
+
+    处理过程：使用大根堆从大到小处理长度
+    《对于长度为x的节点，左右子区间的长度分别为 L = (x + 1) / 2, R = x / 2》
+    计算所有长度为x的节点对答案的贡献：f[x] × (2^l - 1) × (2^R - 1)，因为是使用大根堆处理长度，所以当前的长度x一定是全部的长度了，后面不会继续产生长度为x的区间
+    也就是说后面不会再产生长度为x的节点的贡献
+    然后传递子节点
+    因为左儿子编号 = 父节点编号 × 2
+    所以f[L] += f[x] × 2
+        g[L] += g[x]
+    因为右儿子编号 = 父节点编号 × 2 + 1
+    所以f[R] += f[x] × 2 + g[x] /每个右儿子比左儿子多1，所以多了g[x]个节点
+        g[R] += g[x]
+*/
+const int mod = 998244353;
+
+map<int, int> f, g, vis;
+
+int n, ans;
+
+void init(){
+    f.clear();
+    g.clear();
+    vis.clear();
+    ans = 0;
+}
+
+int ksm(int a, int b, int p){
+    int sum = 1;
+    while(b){
+        if(b & 1) sum = (sum * a) % p;
+        b >>= 1;
+        a = (a * a) % p;
+    }
+    return sum;
+}
+
+void solve(){
+
+    init();
+    cin >> n;    
+
+    priority_queue<int> q;
+    f[n] = g[n] = vis[n] = 1;
+    q.push(n);
+
+    while(q.size()){
+        int x = q.top();
+        q.pop();
+
+        if(x == 1) ans = (ans + f[x]) % mod;
+        else{
+            int L = (x + 1) / 2, R = x / 2;
+            int sum = f[x];
+            sum = (sum * (ksm(2, L, mod) - 1)) % mod;
+            sum = (sum * (ksm(2, R, mod) - 1)) % mod;
+            ans = (ans + sum) % mod;
+
+            f[L] = (f[L] + 2 * f[x]) % mod;
+            g[L] = (g[L] + g[x]) % mod;
+            f[R] = (f[R] + 2 * f[x] + g[x]) % mod;
+            g[R] = (g[R] + g[x]) % mod; 
+
+            if(!vis[L]){
+                vis[L] = 1;
+                q.push(L);
+            }
+            if(!vis[R]){
+                vis[R] = 1;
+                q.push(R);
+            }
+        }
+    }    
+    cout << ans << endl;
+    return ;
+}
+//============================================================================================================================================
+/*
+求n的阶乘后面有多少个连续的0
+n! 末尾的0来自于因子10，而10 = 2 × 5，在n! 的质因数分解中，质因子2的数量远多于质因子5，所以末尾0的个数就由因子5的个数决定
+如果只用⌊n/5⌋来计算，会漏掉一些5。比如：
+25 = 5 × 5，贡献了2个5，不能只算1个
+125 = 5 × 5 × 5，贡献了3个5
+《所以最终的贡献是ans = ⌊n/5⌋ + ⌊n/25⌋ + ⌊n/125⌋ + ....》
+⌊n/5⌋：算5的倍数（每个治沙贡献1个5）
+⌊n/25⌋：算25的倍数（每个额外多贡献1个5）
+⌊n/125⌋：算125的倍数（每个再额外贡献1个5）
+以此类推，知道5^k > n就停止
+时间复杂度为log(5, n)
+*/
+//============================================================================================================================================
+/*
+https://codeforces.com/problemset/problem/633/B
+*/
+void solve(){
+
+    vector<int> ans;
+    int n; cin >> n;
+    for(int i = 1; i <= 1000000; i ++){
+
+        int x = i, cnt = 0;
+        while(x){
+            cnt += x / 5;
+            x /= 5;
+        }
+        if(cnt == n) ans.push_back(i);
+        else if(cnt > n) break;
+    }
+    cout << (int)ans.size() << endl;
+    for(int x : ans) cout << x << " ";
+    cout << endl; 
+    return ;
+}
+//============================================================================================================================================
+/*
+https://codeforces.com/problemset/problem/1731/B
+*/
+const int mod = 1000000000 + 7;
+
+int ksm(int a, int b, int p){
+    int sum = 1;
+    while(b){
+        if(b & 1) sum = (sum * a) % p;
+        b >>= 1;
+        a = (a * a) % p;
+    }
+    return sum;
+}
+
+void solve(){
+
+    int n; cin >> n;
+    int m = n - 1;
+    int sum = ((m * (m + 1) % mod) * (2 * m + 1)) % mod;
+    sum = (sum * ksm(6, mod - 2, mod)) % mod;
+    sum = (2 * sum) % mod;
+
+    int sum1 = ((1 + m) * m / 2) % mod;
+    
+    int ans = (n * n) % mod;
+    ans = (ans + sum + sum1) % mod;
+    cout << (2022 * ans) % mod << endl;
+    return ;
+}
+//============================================================================================================================================
+/*
+https://codeforces.com/problemset/problem/1598/C
+*/
+void solve(){
+
+    int n; cin >> n;
+    vector<int> a(n + 10);
+    for(int i = 1; i <= n; i ++) cin >> a[i];
+
+    int total_sum = 0;
+    for(int i = 1; i <= n; i ++) total_sum += a[i];
+    if((total_sum * 2) % n){
+        cout << 0 << endl;
+        return ;
+    }
+    total_sum = total_sum * 2 / n;
+    int x = total_sum;
+
+    map<int, int> ma;
+    int ans = 0;
+    
+    for(int i = 1; i <= n; i ++){
+        ans += ma[x - a[i]];
+        ma[a[i]] ++;
+    }
+    cout << ans << endl;
+    return ;
+}
+//============================================================================================================================================
+/*
+https://codeforces.com/problemset/problem/1520/D
+*/
+void solve(){
+
+    int n; cin >> n;
+    vector<int> a(n + 10);
+    for(int i = 1; i <= n; i ++) cin >> a[i];
+    map<int, int> ma;
+    int ans = 0;
+    for(int i = 1; i <= n; i ++){
+        ans += ma[a[i] - i];
+        ma[a[i] - i] ++;
+    }
+    cout << ans << endl;
+    return ;
+}
+//============================================================================================================================================
+/*
+https://codeforces.com/problemset/problem/1398/C
+*/
+void solve(){
+
+    int n; cin >> n;
+    vector<int> a(n + 10);
+    for(int i = 1; i <= n; i ++){
+        char sh; cin >> sh;
+        a[i] = sh - '0';        
+    }
+    vector<int> pre(n + 10);
+    for(int i = 1; i <= n; i ++) pre[i] = pre[i - 1] + a[i];
+    map<int, int> ma;
+    int ans = 0;
+    ma[0] ++;
+    for(int i = 1; i <= n; i ++){
+        ans += ma[pre[i] - i];
+        ma[pre[i] - i] ++;
+    }
+    cout << ans << endl;
+    return ;
+}
+//============================================================================================================================================
+/*
+https://atcoder.jp/contests/arc067/tasks/arc067_a
+*/
+const int mod = 1000000000 + 7;
+int cnt[1000 + 100];
+
+void solve(){
+
+    int n; cin >> n;
+    for(int i = 1; i <= n; i ++){
+        if(i == 1) continue;
+        int x = i;
+        for(int j = 2; j * j <= x; j ++){
+            if(x % j == 0){
+                while(x % j == 0){
+                    cnt[j] ++;
+                    x /= j;
+                }
+            }
+        }
+        if(x != 1) cnt[x] ++;
+    }    
+    int ans = 1;
+    for(int i = 1; i <= 1000; i ++){
+        if(cnt[i]) ans = (ans * (cnt[i] + 1)) % mod;
+    }
+    cout << ans << endl;
+    return ;
+}
+//============================================================================================================================================
+/*
+https://atcoder.jp/contests/abc148/tasks/abc148_e
+*/
+void solve(){
+
+    int n; cin >> n;
+    if(n & 1) cout << 0 << endl;
+    else{
+        int ans = n / 10;
+        n /= 10;
+        while(n){
+            ans += n / 5;
+            n /= 5;
+        }
+        cout << ans << endl;
+    }
+    return ;
+}
+//============================================================================================================================================
+/*
+https://codeforces.com/problemset/problem/1114/C
+给定n，求n! 转化为m进制数时末尾有多少个0
+
+首先回想一下n!的阶乘对于10进制下有多少个末尾的0，因为对10质因数分解为2 × 5，然后找n!中有多少个2和有多少个5
+因为2的个数比5多得多，所以只需要找5出现的次数，然后对于25，125等贡献多次，所以ans = ⌊n/5⌋ + ⌊n/25⌋ + ⌊n/125⌋ + ....
+
+《对于末尾的0出现的本质就是该数字被能够被多少个该进制数整除》
+所以只需要对b进行质因数分解即可，然后分别整除即可
+比如现在b的一个质因子num出现了cnt次，然后在n不断的整除nun，得到now_cnt = ⌊n/num⌋ + ⌊n/(num × num)⌋ + ⌊n/(num × num × num)⌋ + ....
+表示的是n!中质因子num出现的次数，那么将now_cnt / cnt就表示满足整除(num^cnt)的贡献
+*/
+int ksm(int a, int b){
+    int sum = 1;
+    while(b){
+        if(b & 1) sum = (sum * a);
+        b >>= 1;
+        a = (a * a);
+    }
+    return sum;
+}
+
+void solve(){
+
+    int n, b; cin >> n >> b;
+    map<int, int> ma;
+    for(int i = 2; i * i <= b; i ++){
+        if(b % i == 0){
+            while(b % i == 0){
+                ma[i] ++;
+                b /= i;
+            }
+        }
+    }
+    if(b != 1) ma[b] ++;
+
+    int ans = 1000000000000000000;
+    for(auto [num, cnt] : ma){
+        //cout << num << " " << cnt << endl;
+        int now_num = num;
+        int now_ans = 0;
+        int x = n;
+        while(x){
+            now_ans += x / now_num;
+            x /= now_num;
+        }
+        ans = min(ans, now_ans / cnt);
+    }
+    cout << ans << endl;
+    return ;
+}
+//============================================================================================================================================
