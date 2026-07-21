@@ -1,0 +1,430 @@
+//============================================================================================================================================
+/*
+当问题中只有两类东西A和B，且它们互补（A+B=L,L是固定总量，如区间长度、前缀长度等），则：
+max(A, B) = (L + |A - B|) / 2
+min(A, B) = (L - |A - B|) / 2
+这样一来，二元的max/min问题就变成了：长度项L(好算) + 绝对值差项|A-B|
+处理|A-B|的经典做法，将一类元素视为+1, 另一类视为-1
+用前缀和记录A-B
+排序前缀和，绝对值转化为邻项差
+最终答案除以2
+*/
+//============================================================================================================================================
+/*
+https://codeforces.com/contest/2121/problem/G
+求所有子区间的贡献之和，贡献等于max(cnt0, cnt1)
+对于长度为len = r - l + 1的区间[l, r]的贡献来说，max(cnt0, cnt1) = (len + |cnt0 - cnt1|) / 2
+所以我们拆分成两部分len和|cnt0 - cnt1|，最后再除以2
+现在计算所有子区间的len：
+len = 1的子区间有n个
+len = 2的子区间有n-1个
+len = 3的子区间有n-2个
+...
+len = n的子区间有1个
+所以直接循环一边即可
+for(int i = 1; i <= n; i ++){
+    ans += (i * (n - i + 1));
+}
+
+然后计算[l, r]的|cnt0 - cnt1|部分，即它们出现的次数之差
+现在将0当作-1，将1当作+1，那么区间的和的绝对值就是该区间|cnt0 - cnt1|，显然不能一一枚举每一个区间来求
+现在求一遍前缀和，因为区间的和等于pre[r] - pre[l - 1]
+举例说明：
+现在就是已经得到pre[0] = 0, 然后pre[1], pre[2], pre[3], pre[4], pre[5]
+那么长度为1的区间的|cnt0 - cnt1|部分为：|pre[1] - pre[0]|, |pre[2] - pre[1]|, |pre[3] - pre[2]|, |pre[4] - pre[3]|, |pre[5] - pre[4]|
+长度为2的区间部分为：|pre[2] - pre[0]|, |pre[3] - pre[1]|, |pre[4] - pre[2]|, |pre[5] - pre[3]|
+长度为3的区间部分为：|pre[3] - pre[0]|, |pre[4] - pre[1]|, |pre[5] - pre[2]|
+长度为4的区间部分为：|pre[4] - pre[0]|, |pre[5] - pre[1]|
+长度为5的区间部分为：|pre[5] - pre[0]|
+《自己领悟的！，实际上根据大小关小可以直接把绝对值去掉；关键的一点是任意的pre[i]和pre[j]都会进行一次减法绝对值，所以不妨直接将
+pre[0], pre[1], pre[2], pre[3], pre[4], pre[5]给从小到大排序，比如排完序后为b[0], b[1], b[2], b[3], b[4], b[5]
+那么对于最大的b[5]来说，有|b[5] - b[4]| + ... + |b[5] - b[0]| = 5 × b[5] - (b[0] + b[1] + b[2] + b[3] + b[4])
+对于b[4]来说，有|b[4] - b[3]| + ... + |b[4] - b[0]| = 4 × b[4] - (b[0] + b[1] + b[2] + b[3])
+所以也可以直接遍历一遍即可！
+
+sort(b.begin(), b.end());
+int total_sum = 0;
+for(int i = 0; i < (int)b.size(); i ++) total_sum += b[i];
+for(int i = (int)b.size() - 1; i >= 0; i --){
+    sum -= b[i];
+    ans += (b[i] * i - sum);
+}
+*/
+const int N = 200000 + 100;
+int n;
+char a[N];
+
+void solve(){
+
+    cin >> n;
+    for(int i = 1; i <= n; i ++) cin >> a[i];
+    int ans = 0;
+    for(int i = 1; i <= n; i ++){
+        ans = (ans + i * (n - i + 1));
+    }    
+    vector<int> b;
+    int sum = 0;
+    b.push_back(sum);
+    for(int i = 1; i <= n; i ++){
+        if(a[i] == '0') sum --;
+        else sum ++;
+        b.push_back(sum);
+    }
+    sort(b.begin(), b.end());
+
+    sum = 0;
+    for(int i = 0; i < (int)b.size(); i ++) sum += b[i];
+    for(int i = (int)b.size() - 1; i >= 0; i --){
+        sum -= b[i];
+        ans += i * b[i] - sum;
+    }
+    cout << ans / 2 << endl;
+    return ;
+}
+//============================================================================================================================================
+/*
+https://codeforces.com/problemset/problem/1919/B
+*/
+void solve(){
+
+    int n, ans = 0;
+    cin >> n;
+    for(int i = 1; i <= n; i ++){
+        char sh; cin >> sh;
+        ans += (sh == '+' ? 1 : -1);
+    }
+    cout << abs(ans) << endl;
+    return ;
+}
+//============================================================================================================================================
+/*
+https://codeforces.com/contest/2131/problem/F
+给定两个长度为n的二进制串a和b，定义一个n×n的网格，(i, j)的值为a[i]⊕b[j]. 从(1, 1)出发，只能向右或者向下走。
+可以事先翻转任意多个a[i]或b[j]（0边1，1变0）.对于每个目标格子(x, y)，求最小翻转次数使得存在一条全0路径到达(x, y)
+输出所以f(x, y)的总和
+
+什么样的情况下(i, j)的值位0，那么a[i]=b[j]
+比如现在我要从(1, 1)出发到(3, 4)，那么其中一条路线为：
+(1, 1) - (1, 2) - (2, 2) - (2, 3) - (3, 3) - (3, 4)
+那么需要：
+a[1] = b[1]
+a[1] = b[2]
+a[2] = b[2]
+a[2] = b[3]
+a[3] = b[3]
+a[3] = b[4]
+所以a[1] = a[2] = a[3] = b[1] = b[2] = b[3] = b[4]
+所以关键的一点是如果从(1, 1)到达(x, y)的条件就是所有的a[1...x] = b[1...y]成立，要么都等于0，要么都等于1
+对于f(i, j)来说，设a[1...i]出现了x1个0，y1个1；设b[1...j]出现了x2个0，y2个1
+那么答案就是min(x1+x2, y1+y2) = ((x1+x2 + y1+y2) - |(x1+x2) - (y1+y2)|) / 2
+依旧拆分为两个部分(x1+x2 + y1+y2)这就是(i + j)  和  |(x1+x2) - (y1+y2)|
+对于所有的f(i,j)求其(i + j)
+那么
+(1, 1) (1, 2) (1, 3) (1, 4)
+(2, 1) (2, 2) (2, 3) (2, 4)
+(3, 1) (3, 2) (3, 3) (3, 4)
+总和就是2 × (1+2+...+n) × n
+
+对于|(x1+x2) - (y1+y2)|就是 设cnt0为a[1...i]和b[1...j]中一共出现的0的个数, cnt1为a[1...i]和b[1...j]中一共出现的1的个数
+|(x1+x2) - (y1+y2)| = |cnt0 - cnt1|
+cnt0 + cnt1 = i + j
+所以cnt0 - cnt1 = cnt0 - (i + j - cnt0) = 2 × cnt0 - (i + j)
+《设前缀和preA[], preB[]分别表示a[], b[]前面0的个数》
+所以2×(preA[i] + preB[j]) - (i + j) = (2×preA[i] - i) + (2×preB[j] - j)
+所以|cnt0 - cnt1| = |(2×preA[i] - i) + (2×preB[j] - j)|
+这时候对于每一个i来说，(2×preA[i] - i) 直接可以求出来，可以事先将(2×preB[j] - j)存入数组中，然后在数组中找
+(2×preA[i] - i) + (2×preB[j] - j) >= 0的个数
+以及(2×preA[i] - i) + (2×preB[j] - j) < 0的个数
+即(2×preB[j] - j) >= -(2×preA[i] - i)的个数
+如果(2×preB[j] - j) >= -(2×preA[i] - i), 那么|(2×preA[i] - i) + (2×preB[j] - j)| = (2×preA[i] - i) + (2×preB[j] - j)
+否则|(2×preA[i] - i) + (2×preB[j] - j)| = -(2×preA[i] - i) - (2×preB[j] - j)
+所以还得将数组从小到大排序并求一次前缀和
+*/
+void solve(){
+
+    int n; cin >> n;
+    vector<char> a(n + 10), b(n + 10);
+    for(int i = 1; i <= n; i ++) cin >> a[i];
+    for(int i = 1; i <= n; i ++) cin >> b[i];
+    
+    int ans = n * n * (n + 1);
+    vector<int> prea(n + 10), preb(n + 10);
+    for(int i = 1; i <= n; i ++){
+        prea[i] = prea[i - 1];
+        preb[i] = preb[i - 1];
+        if(a[i] == '0') prea[i] ++;
+        if(b[i] == '0') preb[i] ++;
+    }
+    // for(int i = 1; i <= n; i ++) cout << prea[i] << " ";
+    // cout << endl;
+    // for(int i = 1; i <= n; i ++) cout << preb[i] << " ";
+    // cout << endl;
+
+    vector<int> v(n + 10), pre(n + 10);
+    for(int i = 1; i <= n; i ++){
+        v[i] = 2 * preb[i] - i;
+    }
+    sort(v.begin() + 1, v.begin() + 1 + n);
+    for(int i = 1; i <= n; i ++) pre[i] = pre[i - 1] + v[i];
+
+    // cout << "ans == " << ans << endl;
+    // for(int i = 1; i <= n; i ++) cout << v[i] << " ";
+    // cout << endl;
+    // for(int i = 1; i <= n; i ++) cout << pre[i] << " ";
+    // cout << endl;
+
+    for(int i = 1; i <= n; i ++){
+        int sum = 2 * prea[i] - i;
+        // cout << sum << " ";
+        int l = 1, r = n, pos = 0;
+        while(l <= r){
+            int mid = (l + r) / 2;
+            if(v[mid] < -sum){
+                pos = mid;
+                l = mid + 1;
+            }
+            else r = mid - 1;
+        }
+        // 小的有pos个
+        // 大的有n - pos个
+        // cout << "pos == " << pos << endl;
+        int sum1 = pos * sum + pre[pos];
+        int sum2 = pre[n] - pre[pos] + (n - pos) * sum;
+        ans = ans + sum1 - sum2;
+    }
+    cout << ans / 2 << endl;
+    return ;
+}
+//============================================================================================================================================
+/*
+2026“钉耙编程”中国大学生算法设计暑期联赛（1）
+Problem A. 小丑牌
+*/
+void solve(){
+
+    int x, y, n, m; cin >> x >> y >> n >> m;
+    
+    vector<int> v1, v2;
+    v1.push_back(0);
+    v2.push_back(0);
+
+    int mina = 10000000000, maxa = -10000000000;
+    int minb = 10000000000, maxb = -10000000000;
+    for(int i = 1; i <= n; i ++){
+        int x; cin >> x;
+        mina = min(mina, x);
+        maxa = max(maxa, x);
+    }
+    for(int i = 1; i <= m; i ++){
+        int x; cin >> x;
+        minb = min(minb, x);
+        maxb = max(maxb, x);
+    }
+    if(n){
+        v1.push_back(mina);
+        v1.push_back(maxa);
+    }
+    if(m){
+        v2.push_back(minb);
+        v2.push_back(maxb);
+    }
+    int ans = x * y;
+    for(int i = 0; i < (int)v1.size(); i ++){
+        for(int j = 0; j < (int)v2.size(); j ++){
+            int sum = (x + v1[i]) * (y + v2[j]);
+            ans = max(ans, sum);
+        }
+    }
+    cout << ans << endl;
+
+    return ;
+}
+//============================================================================================================================================
+/*
+2026“钉耙编程”中国大学生算法设计暑期联赛（1）
+Problem F. 开关灯
+
+打表找规律
+*/
+#include<bits/stdc++.h>
+using namespace std;
+
+#define endl '\n'
+#define int long long
+#define IOS ios::sync_with_stdio(false);cin.tie(NULL);cout.tie(NULL);
+#define HelloWorld IOS;
+const bool HAVE_CASE = false;
+
+
+const int N = 20;
+int n;
+
+int a[N], vis[N];
+int total_cnt[N];
+
+void dfs(int x){
+    if(x == n + 1){
+        vector<int> ans(n + 10), cnt(n + 10);
+        for(int i = 1; i <= n; i ++){
+            cnt[a[i]] = 1;
+            int now_cnt = 0;
+            for(int j = 1; j <= n; j ++){
+                if(j == 1){
+                    if(cnt[j]) now_cnt ++;
+                }
+                if(cnt[j] == 0 && cnt[j + 1] == 1) now_cnt ++;
+            }
+            ans[a[i]] = now_cnt;
+        }
+        // cout << "----------" << endl;
+
+        // for(int i = 1; i <= n; i ++) cout << a[i] << " ";
+        // cout << endl;
+        // for(int i = 1; i <= n; i ++) cout << ans[i] << " ";
+        // cout << endl;
+        // cout << "----------" << endl;
+
+        for(int i = 1; i <= n; i ++) total_cnt[i] += ans[i];
+        return ;
+    }
+    for(int i = 1; i <= n; i ++){
+        if(vis[i]) continue;
+        a[x] = i;
+        vis[i] = 1;
+        dfs(x + 1);
+        vis[i] = 0;
+    }
+}
+
+void solve(){
+
+    cin >> n;
+    dfs(1);
+    for(int i = 1; i <= n; i ++) cout << total_cnt[i] << " ";
+    cout << endl;
+    return ;
+}
+
+signed main(){
+    HelloWorld;
+
+    int tt = 1; 
+    if(HAVE_CASE) cin >> tt;
+    while(tt --) solve();
+    return 0;
+}
+/*
+2 2                                  2
+7 6 7                                3
+32 28 28 32                          4
+180 160 160 160 180                  5
+1200 1080 1080 1080 1080 1200        6
+9240 8400 8400 8400 8400 8400 9240   7
+*/
+const int mod = 998244353;
+
+int ksm(int a, int b, int p){
+    int sum = 1;
+    while(b){
+        if(b & 1) sum = (sum * a) % p;
+        b >>= 1;
+        a = (a * a) % p;
+    }
+    return sum;
+}
+
+void solve(){
+
+    int n; cin >> n;
+    vector<int> a(n + 10);
+    for(int i = 1; i <= n; i ++) cin >> a[i];
+
+    if(n == 1) cout << a[1] << endl;
+    else if(n == 2){
+        int ans = ((2 * a[1]) % mod + (2 * a[2]) % mod) % mod;
+        ans = (ans * ksm(2, mod - 2, mod)) % mod;
+        cout << ans << endl;
+    }
+    else if(n == 3){
+        int ans = ((7 * a[1]) % mod + (6 * a[2]) % mod + (7 * a[3]) % mod) % mod;
+        ans = (ans * ksm(6, mod - 2, mod)) % mod;
+        cout << ans << endl;
+    }
+    else{
+        int fm = 1;
+        for(int i = 1; i <= n; i ++) fm = (fm * i) % mod;
+        int x = 1, y = 7;
+        for(int i = 4; i <= n; i ++){
+            y = (y * i) % mod;
+            x = (x * i) % mod;
+            y = (y + x) % mod;
+        }
+        int x1 = (y - x + mod) % mod, x2 = y;
+        int ans = ((a[1] * x2) % mod + (a[n] * x2) % mod) % mod;
+        for(int i = 2; i <= n - 1; i ++){
+            ans = (ans + (a[i] * x1) % mod) % mod;
+        }
+        ans = (ans * ksm(fm, mod - 2, mod)) % mod;
+        cout << ans << endl;
+    }
+    return ;
+}
+//============================================================================================================================================
+/*
+2026“钉耙编程”中国大学生算法设计暑期联赛（1）
+Problem J. 游戏
+*/
+void solve(){
+
+    int n; cin >> n;
+    vector<int> a(n + 10);
+    for(int i = 1; i <= n; i ++) cin >> a[i];
+    if(n == 1) cout << "NO" << endl;
+    else if(n == 2) cout << "YES" << endl;
+    if(n <= 2) return ;
+
+    int sum1 = 0, sum2 = 0, mid = n / 2 + 1;
+    for(int i = 1; i < mid; i ++) sum1 += a[i];
+    for(int i = mid + 1; i <= n; i ++) sum2 += a[i];
+    if(sum1 > sum2) cout << "YES" << endl;
+    else if(sum1 < sum2) cout << "NO" << endl;
+    else{
+        for(int i = 1; i < mid; i ++){
+            sum1 -= a[mid - i];
+            sum2 -= a[mid + i];
+            if(sum1 != sum2){
+                if(sum1 > sum2) cout << "YES" << endl;
+                else cout << "NO" << endl;
+                return ;
+            }
+        }
+        if(n & 1) cout << "NO" << endl;
+        else cout << "YES" << endl;
+    }
+    return ;
+}
+//============================================================================================================================================
+/*
+2026“钉耙编程”中国大学生算法设计暑期联赛（1）
+Problem E. 摩卡数
+*/
+void solve(){
+
+    int n; cin >> n;
+    int l = 0, r = 100000, numa = 0;
+    while(l <= r){
+        int mid = (l + r) / 2;
+        if(mid * (mid - 1) / 2 <= n){
+            numa = mid;
+            l = mid + 1;
+        }
+        else r = mid - 1;
+    }
+
+    cout << numa + n - numa * (numa - 1) / 2 << " " << 2 << endl;
+    for(int i = 1; i <= numa; i ++) cout << 'a';
+    for(int i = 1; i <= n - numa * (numa - 1) / 2; i ++) cout << 'b';
+    cout << endl;
+    return ;
+}
+//============================================================================================================================================
