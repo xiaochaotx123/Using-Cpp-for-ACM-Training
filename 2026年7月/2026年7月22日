@@ -1,0 +1,559 @@
+//============================================================================================================================================
+/*
+https://codeforces.com/contest/2154/problem/C1
+题目的意思是给定长度为n的两个数组a和b，然后每次操作可以选择一个a[i](1 <= i <= n)，然后将a[i]加一，消耗的代价就是b[i]
+这是问题的简单版本，所有的b[i]都等于1
+需要使得a数组中存在两个下标i < j满足gcd(a[i], a[j]) > 1
+
+显然如果数组中存在两个偶数，那么一定存在i, j使得gcd(a[i], a[j]) > 1
+如果不存在两个偶数：
+如果只有一个偶数，剩下的全为奇数：那么我可以将其中一个奇数执行一次操作变为2，那么就有两个偶数了，此时代价为1
+    但是如果一开始数组中就存在两个奇数满足gcd(a[i], a[j]) > 1，此时代价为0，所以得去寻找是否存在
+如果全是奇数：这种情况很麻烦：就是一开始得去判断是否存在两个奇数的gcd大于1，那么代价为0；如果不存在，则是否可以将其中一个奇数加1之后存在gcd大于1
+    比如5和9，两个奇数gcd=1，但是9+1=10后，gcd=5，此时代价为1。如果还不存在，那么代价就是2，直接分别给两个奇数加1构成两个偶数
+
+这样分析没错，但是还有更好的方法
+vector<int> adj[N]表示 每一个数字i的质因子
+2 × 3 × 5 × 7 × 11 × 13 × 17 × 19 × 23 × 29 × 31 × 37 × 41 × 43 × 47 × 53 = 32589158477190044730 > 10^18
+10^18内的数的不同质因子个数不超过16个，即使相同，就拿最小的2来说，也就六七十个
+最重要的一点就是对于a[i] + 1后的操作就直接可以调用adj[a[i] + 1]了！！！
+
+可以O(n×log(n))预处理出所有数的质因子：
+
+for(int i = 2; i < N; i ++){
+    for(int j = 2; j < N; j += i){
+        adj[j].push_back
+    }
+}
+*/
+#include<bits/stdc++.h>
+using namespace std;
+
+#define endl '\n'
+#define int long long
+#define IOS ios::sync_with_stdio(false);cin.tie(NULL);cout.tie(NULL);
+#define HelloWorld IOS;
+const bool HAVE_CASE = true;
+
+const int N = 200000 + 100;
+vector<int> adj[N];
+
+void solve(){
+
+    int n; cin >> n;
+    vector<int> a(n + 10), b(n + 10);
+    for(int i = 1; i <= n; i ++) cin >> a[i];
+    for(int i = 1; i <= n; i ++) cin >> b[i];
+    vector<int> vis(N + 10);
+
+    for(int i = 1; i <= n; i ++){
+        for(int v : adj[a[i]]){
+            if(vis[v]){
+                cout << 0 << endl;
+                return ;
+            }
+            vis[v] = 1;
+        }
+    }    
+    for(int i = 1; i <= n; i ++){
+        for(int v : adj[a[i] + 1]){
+            if(vis[v]){
+                cout << 1 << endl;
+                return ;
+            }
+        }
+    }
+    cout << 2 << endl;
+    return ;
+}
+
+signed main(){
+    HelloWorld;
+
+    for(int i = 2; i < N; i ++){
+        if(adj[i].size()) continue;
+        for(int j = i; j < N; j += i){
+            adj[j].push_back(i);
+        }
+    }
+
+    int tt = 1; 
+    if(HAVE_CASE) cin >> tt;
+    while(tt --) solve();
+    return 0;
+}
+//============================================================================================================================================
+/*
+https://codeforces.com/contest/2154/problem/C2
+上面一道题目的困难版本，唯一不同在于代价b[i]的范围为[1, 1000000000]
+
+显然思路是差不多的，但是有些地方需要仔细思考
+
+如果一开始就存在两个数满足gcd大于1，直接输出0，return
+for(int i = 1; i <= n; i ++){
+    for(int v : adj[a[i].first]){
+        if(vis[v]){
+            cout << 0 << endl;
+            return ;
+        }
+        vis[v] = 1;
+    }
+}    
+int ans = 1000000000000
+
+如果有一个偶数，那么此时可以将答案设置为奇数中最小的b[i]
+如果全是奇数，那么此时答案为最小的两个b[i],b[j]
+
+然后就可以输出答案了吗？实际上错了
+原因是倒数第二组样例：
+3
+2 7 11
+1 6 6
+正确答案是5，但是输出了6
+输出6是因为直接将7+1为偶数和可以和2的gcd大于1，但是一种更优的方法是将2不断的加到7，之间加了7-2=5次，代价是5×1=5
+所以更小的代码时5而不是6
+
+所以前面的思考中遗漏了一种情况：就是我可以将a数组中的某个数不断的加1，比如加了k次，那么如果a[i]+k可以与其他数的gcd大于1，那么此时的代价为k×b[i]
+下面有两个问题：
+我该选择哪一个a[i]来不断操作加1呢？
+如果选择了a[i]，我该操作多少次呢？
+
+对于第一个问题：
+现在我们将b[i]从小到大排序（需要和a[]一一对应，所以使用pair）
+比如现在的是
+a[1], a[2], a[3], a[4], a[5]
+b[1], b[2], b[3], b[4], b[5]
+那么如果我对a[x](x >= 2)执行k次操作，代价为k×b[x]，是不如对a[1]和a[x]分别执行一次操作，代价为b[1]+b[x]
+b[1]+b[x] <= k×b[x]，如果k=1，那么意思就是将a[x]执行一次操作，这在前面已经对每一个a[i]都执行过了
+所以对a[x]操作都是没有直接对a[1]操作更优的
+《也就是说如果要对a[i]多次操作，唯一也是最优的就是对a[1]操作》
+
+对于第二个问题，现在已经知道只需要对a[1]操作，那么我要执行多少次才能使得使得gcd大于2
+也就是a[1]+k对其他的所有a[i]存在gcd大于2，求这个最小的k，代价就是k×b[1]
+巧妙的转化过来
+例如对于a[x]，要想gcd(a[1]+k, a[x]) > 1，那么我们可以去枚举a[x]的质因子，然后经行类似于筛选的操作
+将质因子不断的累加，直到第一个大于a[1]的值
+比如现在a[1] = 15，a[x]的一个质因子为7，那么质因子7的倍数为7，14，21...
+其中21是第一个大于15的数，所以停下累加，最小的操作次数就是21 - 15 = 6
+就是遍历质因子的倍数，然后找到第一个大于a[1]的倍数，此时a[1]需要加上它们的差才能等于倍数，才能与质因子存在公因数
+for(int i = 2; i <= n; i ++){
+    for(int v : adj[a[i].first]){
+        int min_len = 10000000000;
+        for(int j = v; j < 4 * N; j += v){
+            if(j >= a[1].first){
+                min_len = j - a[1].first;
+                break;
+            }
+        }
+        ans = min(ans, min_len * a[1].second);
+    }
+}
+*/
+#include<bits/stdc++.h>
+using namespace std;
+
+#define endl '\n'
+#define int long long
+#define IOS ios::sync_with_stdio(false);cin.tie(NULL);cout.tie(NULL);
+#define HelloWorld IOS;
+const bool HAVE_CASE = true;
+
+const int N = 200000 + 100;
+vector<int> adj[N];
+
+bool cmp(pair<int, int> a, pair<int, int> b){
+    return a.second < b.second;
+}
+
+void solve(){
+
+    int n; cin >> n;
+    vector<pair<int, int> > a(n + 10);
+    for(int i = 1; i <= n; i ++) cin >> a[i].first;
+    for(int i = 1; i <= n; i ++) cin >> a[i].second;
+    vector<int> vis(N + 10);
+
+    for(int i = 1; i <= n; i ++){
+        for(int v : adj[a[i].first]){
+            if(vis[v]){
+                cout << 0 << endl;
+                return ;
+            }
+            vis[v] = 1;
+        }
+    }    
+    int ans = 1000000000000;
+
+    for(int i = 1; i <= n; i ++){
+        for(int v : adj[a[i].first + 1]){
+            if(vis[v]) ans = min(ans, a[i].second);
+        }
+    }
+    sort(a.begin() + 1, a.begin() + 1 + n, cmp);
+    int cnt = 0;
+    for(int i = 1; i <= n; i ++){
+        if(!(a[i].first & 1)) cnt ++;
+    }
+    if(cnt){
+        for(int i = 1; i <= n; i ++){
+            if(a[i].first & 1){
+                ans = min(ans, a[i].second);
+                break;
+            }
+        }
+    }
+    else ans = min(ans, a[1].second + a[2].second);
+
+    for(int i = 2; i <= n; i ++){
+        for(int v : adj[a[i].first]){
+            int min_len = 10000000000;
+            for(int j = v; j < 4 * N; j += v){
+                if(j >= a[1].first){
+                    // cout << j << " " << a[1].first << endl;
+                    min_len = j - a[1].first;
+                    break;
+                }
+            }
+            ans = min(ans, min_len * a[1].second);
+        }
+    }
+    cout << ans << endl;
+    return ;
+}
+
+signed main(){
+    HelloWorld;
+
+    for(int i = 2; i < N; i ++){
+        if(adj[i].size()) continue;
+        for(int j = i; j < N; j += i){
+            adj[j].push_back(i);
+        }
+    }
+
+    int tt = 1; 
+    if(HAVE_CASE) cin >> tt;
+    while(tt --) solve();
+    return 0;
+}
+//============================================================================================================================================
+/*
+https://codeforces.com/problemset/problem/862/B
+*/
+const int N = 100000 + 100;
+
+int n, color[N];
+vector<int> adj[N];
+
+void dfs(int u, int fa){
+    for(int v : adj[u]){
+        if(v == fa) continue;
+        if(color[u] == 1) color[v] = 0;
+        else color[v] = 1;
+        dfs(v, u); 
+    }
+}
+
+void solve(){
+
+    cin >> n;
+    for(int i = 1; i <= n - 1; i ++){
+        int u, v; cin >> u >> v;
+        adj[u].push_back(v);
+        adj[v].push_back(u);
+    }
+    for(int i = 1; i <= n; i ++) color[i] = -1;
+    color[1] = 0;
+    dfs(1, -1);
+    int cnt1 = 0;
+    for(int i = 1; i <= n; i ++){
+        if(color[i] == 1) cnt1 ++;
+    }
+    int ans = 0;
+    for(int i = 1; i <= n; i ++){
+        if(color[i] == 0){
+            ans += cnt1 - adj[i].size();
+        }
+    }
+    cout << ans << endl;
+    return ;
+}
+//============================================================================================================================================
+/*
+https://codeforces.com/problemset/problem/520/B
+*/
+int n, m;
+
+struct cmp{
+    bool operator() (const pair<int, int> &a, const pair<int, int> &b)const{
+        return a.second > b.second;
+    }
+};
+
+void solve(){
+
+    cin >> n >> m;
+    vector<int> vis(100000);
+    priority_queue<pair<int, int>, vector<pair<int, int>>, cmp> q;
+    q.push({n, 0});
+    vis[n] = 1;
+    while(q.size()){
+        auto now = q.top(); q.pop();
+        int u = now.first, step = now.second;
+        if(u == m){
+            cout << step << endl;
+            return ;
+        }   
+        int nex_num1 = u * 2;
+        if(!vis[nex_num1] && nex_num1 <= 2 * m){
+            vis[nex_num1] = 1;
+            q.push({nex_num1, step + 1});
+        }
+        int nex_num2 = u - 1;
+        if(!vis[nex_num2] && nex_num1 >= 1){
+            vis[nex_num2] = 1;
+            q.push({nex_num2, step + 1});
+        }
+    }
+    return ;
+}
+//============================================================================================================================================
+/*
+https://www.nowcoder.com/practice/8c0d60834a924ce98e7425fed9c62ab8?channelPut=tracker2
+*/
+const int mod = 1000000000 + 7;
+const int N = 100000 + 100;
+
+int n, k;
+int vis[N];
+vector<int> adj[N];
+
+int p[N], cnt[N];
+
+int find(int x){
+    if(x != p[x]) p[x] = find(p[x]);
+    return p[x];
+}
+
+void dfs(int u, int fa){
+
+    int now_cnt = 0;
+
+    for(int v : adj[u]){
+        if(!vis[v]) now_cnt ++;
+    }
+    if(vis[u]) cnt[u] = now_cnt;
+
+    for(int v : adj[u]){
+        if(v == fa) continue;
+        dfs(v, u);
+
+        if(vis[u] && vis[v]){
+            int fu = find(u), fv = find(v);
+            if(fu != fv){
+                // cout << "-----------" << endl;
+                // cout << u << " " << fu << " " << cnt[fu] << endl;
+                // cout << v << " " << fv << " " << cnt[fv] << endl;
+                // cout << "-----------" << endl;
+
+                cnt[fv] += cnt[fu];
+                p[fu] = fv;
+            }
+        }
+
+    }
+}
+void solve(){
+
+    cin >> n >> k;
+    for(int i = 1; i <= n; i ++){
+        p[i] = i;
+    }
+
+    for(int i = 1; i <= k; i ++){
+        int x; cin >> x;
+        vis[x] = 1;
+    }
+    for(int i = 1; i <= n - 1; i ++){
+        int u, v; cin >> u >> v;
+        adj[u].push_back(v);
+        adj[v].push_back(u);
+    }
+
+    dfs(1, -1);
+
+    int ans_cost = 0, ans_num = 1;
+    for(int i = 1; i <= n; i ++){
+        if(vis[i]){
+            int fi = find(i);
+            if(i == fi){
+                // cout << i << " " << cnt[fi] << endl;
+                ans_cost ++;
+                ans_num = (ans_num * cnt[fi]);
+            }
+        }
+    }
+    cout << ans_cost << " " << ans_num << endl;
+    return ;
+}
+//============================================================================================================================================
+/*
+2026牛客暑期多校训练营2
+Problem M. 可能连通罢
+*/
+void solve(){
+
+    int n, m; cin >> n >> m;
+    if(m <= 1) cout << 0 << endl;
+    else if(m <= n - 1) cout << m * (m - 1) / 2 << endl;
+    else cout << (n - 1) * (n - 2) / 2 + n - m - 1 << endl; 
+    return ;
+}
+//============================================================================================================================================
+/*
+2026牛客暑期多校训练营2
+Problem N. 收拢至中位数
+*/
+void solve(){
+
+    int n, m; cin >> n >> m;
+    vector<int> a(n + 10), pre(n + 10);
+    int ans = 0;
+    for(int i = 1; i <= n; i ++){
+        cin >> a[i];
+        ans += a[i];
+    }
+    sort(a.begin() + 1, a.begin() + 1 + n);
+    for(int i = 1; i <= n; i ++) pre[i] = pre[i - 1] + a[i];
+    if(m & 1){
+        int mid = (m + 1) / 2;
+        int sum = pre[mid - 1];
+        int change_num = -10000000000000000;
+        for(int i = mid; i + mid - 1 <= n; i ++){
+            int sum1 = pre[i + mid - 1] - pre[i];
+            change_num = max(change_num, (m - 1) * a[i] - sum - sum1);
+        }
+        cout << ans + change_num << endl;
+    }
+    else{
+        int mid = (m + 1) / 2;
+        int sum = pre[mid - 1];
+        int change_num = -10000000000000000;
+        for(int i = mid; i + mid <= n; i ++){
+            change_num = max(change_num, (a[i] + a[i + 1]) * (mid - 1) - (sum + pre[i + mid] - pre[i + 1]));
+        }
+        cout << ans + change_num << endl;
+    }
+    return ;
+}
+//============================================================================================================================================
+/*
+https://www.luogu.com.cn/problem/P3812
+线性基的模板，求给定的n个数中，最大的异或和为多少
+*/
+#include<bits/stdc++.h>
+using namespace std;
+
+#define endl '\n'
+#define int long long
+#define IOS ios::sync_with_stdio(false);cin.tie(NULL);cout.tie(NULL);
+#define HelloWorld IOS;
+const bool HAVE_CASE = false;
+
+
+const int M = 61;
+int basis[M];
+
+void insert(int x){
+    for(int i = M - 1; i >= 0; i --){
+        if(!((x >> i) & 1)) continue;
+        if(!basis[i]){
+            basis[i] = x;
+            return ;
+        }
+        x ^= basis[i];
+    }
+}
+
+int query_max(){
+    int ans = 0;
+    for(int i = M - 1; i >= 0; i --){
+        if((ans ^ basis[i]) > ans) ans = ans ^ basis[i];
+    }
+    return ans;
+}
+
+void solve(){
+
+    int n; cin >> n;
+    vector<int> a(n + 10);
+    for(int i = 1; i <= n; i ++){
+        int x; cin >> x;
+        insert(x);
+    }
+    cout << query_max() << endl;
+    return ;
+}
+
+signed main(){
+    HelloWorld;
+
+    int tt = 1; 
+    if(HAVE_CASE) cin >> tt;
+    while(tt --) solve();
+    return 0;
+}
+//============================================================================================================================================
+/*
+2026牛客暑期多校训练营2
+Problem B. 按位最大化
+
+显然如果分为两个集合A, B，那么所有元素的异或和T = A ^ B
+如果对于总异或和T中某一位上为1，那么A集合与B集合中在这一位上一定是一个为0一个为1，那么对最后的总贡献一定是有贡献的，所以不需要看为1的时候
+如果T的某一位为0，那么在A和B中这一位要么同时为1要么同时为0，为了使得相加的结果更大，所以从高位到低位尽可能为1
+在线性基中我们可以快速求出在数组中选取若干个数字的异或和的最大值，那么在这里需要求的是在数组中选取若干个数字对标total上为1的位置的异或最大值
+所以我们insert()的时候不是直接insert(a[i])，而是insert(a[i] & total)这样对标一下
+*/
+const int M = 61;
+int total, basis[M];
+
+
+void insert(int x){
+    for(int i = M - 1; i >= 0; i --){
+        if(!((x >> i) & 1)) continue;
+        if(!basis[i]){
+            basis[i] = x;
+            return ;
+        }
+        x ^= basis[i];
+    }
+}
+
+int query_max(){
+    int ans = 0;
+    for(int i = M - 1; i >= 0; i --){
+        if((ans ^ basis[i]) > ans) ans ^= basis[i];
+    }
+    return ans;
+}
+
+void solve(){
+    total = 0;
+    for(int i = 0; i < M; i ++) basis[i] = 0;    
+    
+    int n; cin >> n;
+    vector<int> a(n + 10);
+    for(int i = 1; i <= n; i ++){
+        cin >> a[i];
+        total ^= a[i];
+    }
+    int mask = (~total) & ((1LL << M) - 1);
+    
+    for(int i = 1; i <= n; i ++) insert(mask & a[i]);
+    int max_num = query_max();
+
+    int ans = (int)(total ^ max_num) + max_num;
+    cout << ans << endl;
+    return ;
+}
+//============================================================================================================================================
