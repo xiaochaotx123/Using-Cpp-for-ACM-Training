@@ -1,0 +1,170 @@
+//============================================================================================================================================
+/*
+https://codeforces.com/problemset/problem/706/C
+*/
+const int inf = 1000000000000000000;
+
+void solve(){
+
+    int n; cin >> n;
+    vector<int> c(n + 10);
+    vector<string> a(n + 10);
+    for(int i = 1; i <= n; i ++) cin >> c[i];
+    for(int i = 1; i <= n; i ++) cin >> a[i];
+    vector<vector<int> > dp(n + 10, vector<int> (2, inf));
+
+    dp[1][0] = 0, dp[1][1] = c[1];
+    for(int i = 2; i <= n; i ++){
+        string s1 = a[i - 1], s2 = a[i];
+        string s3 = a[i - 1], s4 = a[i];
+        reverse(s3.begin(), s3.end());
+        reverse(s4.begin(), s4.end());
+        if(s2 >= s1) dp[i][0] = min(dp[i][0], dp[i - 1][0]);
+        if(s2 >= s3) dp[i][0] = min(dp[i][0], dp[i - 1][1]);
+
+        if(s4 >= s1) dp[i][1] = min(dp[i][1], dp[i - 1][0] + c[i]);
+        if(s4 >= s3) dp[i][1] = min(dp[i][1], dp[i - 1][1] + c[i]);
+    }
+    int ans = min(dp[n][0], dp[n][1]);
+    if(ans == inf) cout << "-1" << endl;
+    else cout << ans << endl;
+
+    return ;
+}
+//============================================================================================================================================
+/*
+https://codeforces.com/contest/1207/problem/C
+*/
+void solve(){
+
+    int n, a, b; cin >> n >> a >> b;
+    vector<char> s(n + 10);
+    for(int i = 1; i <= n; i ++) cin >> s[i];
+    vector<vector<int> > dp(n + 10, vector<int> (2, inf));
+    dp[1][0] = a + b, dp[1][1] = 2 * a + b;
+    for(int i = 2; i <= n; i ++){
+        if(s[i] == '0'){
+            dp[i][0] = min(dp[i - 1][0] + a + b, dp[i - 1][1] + 2 * a + 2 * b);
+            dp[i][1] = min(dp[i - 1][0] + 2 * a + b, dp[i - 1][1] + a + 2 * b);
+        }
+        else dp[i][1] = dp[i - 1][1] + a + 2 * b;
+    }
+    // for(int i = 1; i <= n; i ++){
+    //     cout << i << " " << dp[i][0] << " " << dp[i][1] << endl;
+    // }
+    cout << dp[n][0] + b << endl;
+
+    return ;
+}
+//============================================================================================================================================
+/*
+https://codeforces.com/contest/1420/problem/C1
+*/
+void solve(){
+
+    int n, q; cin >> n >> q;
+    vector<int> a(n + 10);
+    for(int i = 1; i <= n; i ++) cin >> a[i];
+    int max_num0 = 0, max_num1 = 0;
+    for(int i = 1; i <= n; i ++){
+        int now_num0 = max(a[i], max_num1 + a[i]);
+        int now_num1 = max(0LL, max_num0 - a[i]);
+        max_num0 = max(max_num0, now_num0);
+        max_num1 = max(max_num1, now_num1);
+    }
+    cout << max(max_num0, max_num1) << endl;
+    return ;
+}
+//============================================================================================================================================
+/*
+https://codeforces.com/problemset/problem/1272/D
+*/
+void solve(){
+
+    int n; cin >> n;
+    vector<int> a(n + 10);
+    vector<vector<int> > dp(n + 10, vector<int> (2, 0));    
+    for(int i = 1; i <= n; i ++){
+        dp[i][0] = 1;
+    }
+
+    for(int i = 1; i <= n; i ++) cin >> a[i];
+
+    for(int i = 2; i <= n; i ++){
+        if(a[i] > a[i - 1]){
+            dp[i][0] = dp[i - 1][0] + 1;
+            dp[i][1] = dp[i - 1][1] + 1;
+            if(i >= 3 && a[i] > a[i - 2]) dp[i][1] = max(dp[i][1], dp[i - 2][0] + 1); 
+        }
+        else{
+            dp[i][0] = 1;
+            dp[i][1] = 1;
+            if(i >= 3 && a[i] > a[i - 2]) dp[i][1] = max(dp[i][1], dp[i - 2][0] + 1); 
+        }
+    }
+    int ans = 0;
+    for(int i = 1; i <= n; i ++) ans = max({ans, dp[i][0], dp[i][1]});
+    cout << ans << endl;
+
+    return ;
+}
+//============================================================================================================================================
+/*
+https://codeforces.com/problemset/problem/1013/E
+题目的意思是有n座山丘排成一排，第i座山丘的高度位a[i]。城市管理者想在山丘上建房子，但房子只能建在严格高于左右相邻的山丘的的山丘上（即必须满足a[i - 1] < a[i] > a[i + 1]）
+有一台挖掘机，每次操作可以将任意一座山丘的高度降低1，可以降低到0甚至负数，但不能升高。
+管理者想要建k座房子，但k具体值未定，需要你求出k = 1, 2, 3, ...⌈n/2⌉分别对应的最小操作数。
+
+显然，相邻不能同时建房子，所以选中的房子的位置之间至少隔一个位置，因此在dp递推，当决定第i个位置建房子，必须从i-2转移过来，而不是i-1。
+定义dp[i][j][0]：考虑前i座山丘，建了j座房子，且第i座不是房子的最小操作数
+定义dp[i][j][1]：考虑前i座山丘，建了j座房子，且第i座是房子的最小操作数
+
+对于dp[i][j][0]的转移：因为第i座不是房子，所以对于i-1是房子或者不是房子都可以转移过来
+如果第i-1座不是房子，那么没有影响，所以dp[i][j][0] = dp[i - 1][j][0]
+如果第i-1座是房子，那么需要满足a[i - 1] > a[i]，所以dp[i][j][0] = dp[i-1][j][1] + max(0LL, a[i] - a[i-1] + 1);
+
+// 对于dp[i][j][1]的转移，因为第i座是房子，所以对于i-1必须不是房子，如果i-1也是房子，则矛盾
+// 所以dp[i][j][1]只能从dp[i-1][j-1][0]转移而来
+// 所以dp[i][j][1] = dp[i-1][j-1][0] + mas(0LL, a[i-1]-a[i]+1);
+第i座是房子，第i-1确实不能是房子，所以直觉上似乎应该从dp[i-1][j-1][0]转移。但问题出在高度信息丢失上
+dp[i-1][j-1][0]只记录了前i-1个位置的最小花费，但它灭有记录经过操作后的a[i-1]的实际高度
+而a[i-1]的实际高度取决于a[i-2]是不是房子
+如果a[i-2]不是房子：a[i-1]保持原始高度，没有被修改过
+如果a[i-2]是房子，a[i-1]可以已经被降低过了
+dp[i-1][j-1][0]丢失了a[i-1]是否已被修改的信息，导致后续花费计算可能使用错误的原始高度，从i-2转移则能区分i-2是不是房子，从而一次性计算a[i-1]的值
+
+如果第i-2座不是房子，那么只需要保证a[i-1] < a[i]即可，所以dp[i][j][1] = dp[i-2][j-1][0] + max(0LL, a[i - 1] - a[i] + 1);
+如果第i-2座是房子，那么a[i-1]需要同时满足a[i-1]<a[i-2]和a[i-1]<a[i]，所以dp[i][j][1] = dp[i-2][j-1][1] + max(0LL, a[i - 1] - min(a[i - 2], a[i]) + 1);
+*/
+const int N = 5000 + 10;
+int n, a[N];
+int dp[N][N / 2 + 5][2];
+
+void solve(){
+
+    cin >> n;
+    for(int i = 1; i <= n; i ++) cin >> a[i];
+    int m = (n + 1) / 2;
+    for(int i = 0; i <= n; i ++){
+        for(int j = 0; j <= m; j ++){
+            dp[i][j][0] = dp[i][j][1] = inf;
+        }
+        dp[i][0][0] = 0;
+    }    
+    dp[1][1][1] = 0;
+
+    for(int i = 2; i <= n; i ++){
+        for(int j = 1; j <= m; j ++){
+            dp[i][j][0] = dp[i - 1][j][0];
+            int cost = max(0LL, a[i] - a[i - 1] + 1);
+            dp[i][j][0] = min(dp[i][j][0], dp[i - 1][j][1] + cost);
+
+            dp[i][j][1] = dp[i - 2][j - 1][0] + max(0LL, a[i - 1] - a[i] + 1);
+            cost = max(0LL, a[i - 1] - min(a[i], a[i - 2]) + 1);
+            dp[i][j][1] = min(dp[i][j][1], dp[i - 2][j - 1][1] + cost);
+        }
+    }
+    for(int i = 1; i <= m; i ++) cout << min(dp[n][i][0], dp[n][i][1]) << (i == m ? "\n" : " ");
+    return ;
+}
+//============================================================================================================================================
