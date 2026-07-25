@@ -1,0 +1,380 @@
+//============================================================================================================================================
+/*
+2026“钉耙编程”中国大学生算法设计暑期联赛（1）
+Problem F. 开关灯
+
+虽然大部分的代码都是打表过了，但是仍然需要思考正确的逻辑
+如果现在一共有c个连通块，且现在打开的是第i盏灯，那么就会获得c×a[i]分
+分开计算每个位置i被点亮时对答案的贡献，等价于求出当前连通块个数c的期望，然后直接乘以a[i]即可就是该位置的贡献
+一个经典的转化：连通块的数量 = 灯亮的个数 - 相邻灯的个数；也就是说每有一堆相邻灯同时两者，就会让连通块数量减少1
+令c = |S| - |e(S)|，其中|S|表示一共亮了多少盏灯，|e(S)|表示相邻两盏灯都同时被点亮的对数
+E(c) = E(|S|) - E(|e(S)|)
+
+求E(|S|)：一共亮了多少盏灯的期望，现在一定是点亮了第i盏灯，所以+1，对于其他n-1盏灯，都有二分一的概率点亮，所以
+E(|S|) = 1 + (n - 1) / 2 =  (n + 1) / 2
+
+求E(|e(S)|)：现在点亮了第i盏灯，点亮的所有灯中，相邻的两盏灯同时亮着的期望
+现在分为两种情况讨论：相邻的灯中包含i的情况与不包含i的情况
+包含i的情况：那么对于i > 1的时候，都可以有一个相邻的情况(i - 1, i)；对于i < n的时候，都可以由一个相邻的情况(i + 1, i)，相邻的灯亮的概率都是1/2
+    所以这种情况的期望是([1 < i] + [i < n]) / 2
+不包含i的情况，设i左边相邻的两位位置为a和b，所以如果点亮i的时候，a和b都已经亮了，所有一共有6种情况：
+    (a,b,i), (b,a,i), (a,i,b), (b,i,a), (i,a,b), (i,b,a)，其中只有(a,b,i)和(b,a,i)是正确的，那么此时的概率为1/3
+    因为包含i的相邻对数有([1 < i] + [i < n]), 一共有n-1个相邻对
+    所以这种情况的期望就是((n - 1) - ([1 < i] + [i < n])) / 3
+
+所以对于i来说的贡献就是 ((n + 1) / 2 - (([1 < i] + [i < n]) / 2 + ((n - 1) - ([1 < i] + [i < n])) / 3)) × a[i]
+化简为 (n + 5 - ([1 < i] + [i < n])) / 6  × a[i]
+*/
+const int mod = 998244353;
+
+int ksm(int a, int b, int p){
+    int sum = 1;
+    while(b){
+        if(b & 1) sum = (sum * a) % p;
+        b >>= 1;
+        a = (a * a) % p;
+    }
+    return sum;
+}
+
+void solve(){
+
+    int n; cin >> n;
+    vector<int> a(n + 10);
+    for(int i = 1; i <= n; i ++) cin >> a[i];
+    int ans = 0, niyuan = ksm(6, mod - 2, mod);
+    for(int i = 1; i <= n; i ++){
+        int sum = (niyuan * (n + 5 - (i > 1) - (i < n))) % mod;
+        ans = (ans + a[i] * sum) % mod;
+    }
+    cout << ans << endl;
+
+    return ;
+}
+//============================================================================================================================================
+/*
+https://codeforces.com/problemset/problem/453/A
+有一个m面的骰子，骰子的第一个面有一个点，第二个面有二个点，第三个面有三个点，...，第m个面有m个点。掷出骰子每个面出现的概率相同都是1/m，每次掷出骰子都是独立的
+求掷出骰子n次后可能得到的最大点数
+
+因为概率相同并且实践独立，所以设掷出的最大点数为k
+那么掷出n次骰子最大点数 小于等于 k的情况有k^n种，但是其中可能不包含k，比如全是1这种情况
+所以只需要再减去小于等于k-1的情况，所以掷出n次骰子且出现的最大点数为k的情况有k^n - (k-1)^n种，这是情况数
+那么概率就是(k/m)^n - ((k-1)/m)^n, 然后乘以当前的k点数就是期望值
+*/
+double ksm(double a, int b){
+    double sum = 1.0;
+    while(b){
+        if(b & 1) sum = (sum * a);
+        b >>= 1;
+        a = (a * a);
+    }
+    return sum;
+}
+
+void solve(){
+
+    int m, n; cin >> m >> n;
+    double ans = 0.0;
+    for(int i = 1; i <= m; i ++){
+        double p1 = ksm(i * 1.0 / m, n);
+        double p2 = ksm((i - 1) * 1.0 / m, n);
+        ans += (p1 - p2) * i;
+    }
+    cout << fixed << setprecision(12) << ans << endl;
+    return ;
+}
+//============================================================================================================================================
+/*
+https://codeforces.com/problemset/problem/235/B
+题目的意思是有n次点击，每次点击有两种结果，要么正确，要么错误；正确的概率为a[i]
+那么比如现在有5次点击：✔ ✔ × ✔ ×，取其中正确块的长度，有[1, 2],[4, 4]；最后的总值就是块的长度的平方：2 × 2 + 1 × 1 = 5
+现在因为每次点击有可能正确有可能错误，所以求出最后总值的期望
+
+如果现在的长度为len，那么长度加1变为len+1后增加的贡献就是(len+1)^2 - len^2 = 2×len+1
+所以设len[i]表示前i个点击中✔的长度的期望
+设dp[i]表示前i个点击中得分的期望
+
+对于len[i]的转移公式推导：
+如果第i位是正确的，那么会在len[i-1]的基础上长度加1：len[i] += (len[i - 1] + 1) * p[i]
+如果第i位是错误的，那么✔的长度为0，len[i] += 0 * (1 - p[i])
+所以len[i] = (len[i - 1] + 1) * p[i] + 0 * (1 - p[i]) = (len[i-1] + 1) * p[i]
+
+对于dp[i]的转移公式推导
+如果第i位是正确的，那么长度从len[i - 1]变为len[i - 1] + 1，所以增加的贡献就是(len[i - 1] + 1) ^ 2 - len[i - 1] ^ 2 = 2 * len[i - 1] + 1;
+如果第i位是错误的，那么✔的长度为0，所以新增加的贡献为0
+所以dp[i] = dp[i - 1] + (2 * len[i - 1]  + 1) * p[i] + 0 * (1 - p[i]) = dp[i - 1] + (2 * len[i - 1] + 1) * p[i];
+*/
+const int N = 100000 + 100;
+int n;
+double p[N], len[N], dp[N];
+
+void solve(){
+
+    cin >> n;
+    for(int i = 1; i <= n; i ++) cin >> p[i];
+    for(int i = 1; i <= n; i ++){
+        len[i] = (len[i - 1] + 1) * p[i];
+        dp[i] = dp[i - 1] + (2 * len[i - 1] + 1) * p[i];
+    }
+    cout << fixed << setprecision(15) << dp[n] << endl;
+    return ;
+}
+/*
+仔细观察代码:
+对于len[i] = (len[i - 1] + 1) * p[i], 实际上只使用了len[i]和len[i - 1]，所以直接可以使用一个变量优化空间
+len = (len + 1) * p[i]
+
+对于dp[i] = dp[i - 1] + (2 * len[i - 1] + 1) * p[i]
+实际上(2 * len[i - 1] + 1) * p[i]是新增加的贡献，可以直接使用一个double ans来每次直接新增加贡献优化空间
+ans += (2 * len + 1) * p[i]
+
+因为len只使用了一个变量，如果放在ans增加贡献之前则会已经修改了，所以放在ans增加贡献之后
+*/
+int n;
+double p, len, ans;
+
+void solve(){
+
+    cin >> n;
+    for(int i = 1; i <= n; i ++){
+        cin >> p;
+        ans += (2 * len + 1) * p;
+        len = (len + 1) * p;
+    }   
+    cout << fixed << setprecision(15) << ans << endl;
+    return ;
+}
+/*
+优化到最简了，甚至没了p[]数组
+*/
+//============================================================================================================================================
+/*
+https://codeforces.com/problemset/problem/1753/C
+题目的意思是给定一个二进制数组（只包含0和1）
+然后可以执行一次操作：随机选择两个下标i < j，如果a[i] > a[j]就交换a[i]与a[j]，求预计的期望操作次数使得a数组有序
+
+设a数组中有k个0，那么就有n - k个1，最终的目标状态就是a数组前面有k个0，后面就是n - k个1
+
+现在假设前面k个位置有cnt个1，那么同样的，后面n - k个位置有cnt个0，我现在如果选择的是前面的1以及后面的0，那么交换就能将cnt减1
+这样的对数是cnt × cnt对，一共有C(n, 2)对数，所以选中的概率为cnt × cnt / C(n, 2)
+《
+    一个基本结论是几何分布的概率为期望结论：
+    假设你反复做同一个实验，每次实验成功概率是 p，失败概率是 1-p。各次实验之间的结果相互独立。你一直做，直到第一次成功为止。
+    问：你期望要做多少次才能第一次成功？
+    这就是经典的几何分布。
+    答案是 E = 1 / P
+》
+所以我选中的概率是cnt × cnt / C(n, 2)，那么期望操作数量是C(n, 2) / cnt × cnt
+所以答案直接是i从1到cnt累加 C(n, 2) / i × i
+*/
+const int mod = 998244353;
+
+int ksm(int a, int b, int p){
+    int sum = 1;
+    a %= mod;
+    while(b){
+        if(b & 1) sum = (sum * a) % p;
+        b >>= 1;
+        a = (a * a) % p;
+    }
+    return sum;
+}
+
+void solve(){
+
+    int n; cin >> n;
+    vector<int> a(n + 10);
+    for(int i = 1; i <= n; i ++) cin >> a[i];
+    int total_zero = 0, cnt = 0;
+    for(int i = 1; i <= n; i ++) total_zero += (a[i] == 0);
+    for(int i = 1; i <= total_zero; i ++) cnt += (a[i] == 1);
+    int total_pair = n * (n - 1) / 2;
+    total_pair %= mod;
+    int ans = 0;
+    for(int i = 1; i <= cnt; i ++){
+        int sum = total_pair * ksm(i * i, mod - 2, mod) % mod;
+        ans = (ans + sum) % mod;
+    }
+    cout << ans << endl;
+    return ;
+}
+//============================================================================================================================================
+/*
+https://codeforces.com/problemset/problem/280/C
+给定一棵以1为根的树，每次操作随机等概率选择一个仍然存在的节点u，然后将u以及u的子树全部删除
+求将整棵树删除的期望操作次数
+
+直接考虑每一个节点删除的次数的期望E(cnt[i])，那么答案就是所有的节点的E(cnt[i])累加
+但是对于一个节点删除的次数的期望要么为0次，要么为1次，所以E(cnt[i])就等于删除该节点的概率为p[i]
+现在考虑任意一个操作序列，如果能够删除i节点的条件是i节点的所有祖先都没有删除，也就是说i节点要在所有祖先之前删除，这样才能删除i节点
+而任意的操作顺序中，对于i节点，只考虑根节点1到i的路径。从根到i经过的节点数，就是i的深度，记作depth[i]，这条路径上有depth[i]个节点
+因为排列是随机的，所有在depth[i]个节点中，首先访问到的节点是第i个节点的概率就是 1 / dpeth[i]
+最终的答案就是每个节点的1 / depth[i]之和！
+*/
+const int N = 100000 + 100;
+
+int n, depth[N];
+vector<int> adj[N];
+
+void dfs(int u, int fa, int dep){
+    depth[u] = dep;
+    for(int v : adj[u]){
+        if(v == fa) continue;
+        dfs(v, u, dep + 1);
+    }
+}
+
+void solve(){
+
+    cin >> n;
+    for(int i = 1; i <= n - 1; i ++){
+        int u, v; cin >> u >> v;
+        adj[u].push_back(v);
+        adj[v].push_back(u);
+    }    
+    dfs(1, -1, 1);
+    double ans = 0.0;
+    for(int i = 1; i <= n; i ++){
+        ans += 1.0 / depth[i];
+    }
+    cout << fixed << setprecision(20) << ans << endl;
+    return ;
+}
+//============================================================================================================================================
+/*
+https://codeforces.com/problemset/problem/1265/E
+题目意思是由n面镜子，对于第i面竞赛，询问它我今天是否漂亮，它由 p[i] / 100的概率回复漂亮，有(100 - p[i]) / 100的概率回复不漂亮
+现在需要从第一面镜子开始询问。每天，如果询问的是第i面镜子：
+    如果第i面镜子回复的是漂亮，这种情况下，如果是最后一面镜子即i = n，那么就会停止询问；否则第二天会继续询问第i + 1面镜子
+    如果第i面镜子回复的是不漂亮，那么第二天又需要从第一面镜子开始询问
+求停止询问的期望天数
+
+设dp[i]表示询问到第i面镜子的期望询问天数
+那么考虑dp[i]如何转移而来，对于第i天
+    如果第i天镜子回复漂亮，那么dp[i] += (dp[i - 1] + 1) * (p[i] / 100)
+    如果第i天镜子回复不漂亮，那么dp[i] += (dp[i - 1] + 1 + dp[i]) * ((100 - p[i]) / 100)
+所以dp[i] = (dp[i - 1] + 1) * 100 / p[i]
+*/
+
+const int mod = 998244353;
+
+int ksm(int a, int b, int p){
+    int sum = 1;
+    a %= mod;
+    while(b){
+        if(b & 1) sum = (sum * a) % p;
+        b >>= 1;
+        a = (a * a) % p;
+    }
+    return sum;
+}
+
+void solve(){
+
+    int n; cin >> n;
+    int ans = 0;
+    for(int i = 1; i <= n; i ++){
+        int p; cin >> p;
+        ans = (((ans + 1) * 100) % mod * ksm(p, mod - 2, mod)) % mod;
+    }
+    cout << ans << endl;
+    return ;
+}
+//============================================================================================================================================
+/*
+2026“钉耙编程”中国大学生算法设计暑期联赛（1）
+Problem J. 游戏
+*/
+void solve(){
+
+    int n; cin >> n;
+    vector<int> a(n + 10), b, c;
+    for(int i = 1; i <= n; i ++) cin >> a[i];
+    int sum = 0, m = n / 2;
+    if(m == 0){
+        cout << "NO" << endl;
+        return ;
+    }    
+    for(int i = 1; i <= m; i ++){
+        sum += a[i];
+        b.push_back(sum);
+    }
+
+    sum = 0;
+    if(n & 1){
+        for(int i = n; i >= m + 2; i --){
+            sum += a[i];
+            c.push_back(sum);
+        }
+    }
+    else{
+        for(int i = n; i >= m + 2; i --){
+            sum += a[i];
+            c.push_back(sum);
+        }
+    }
+    reverse(b.begin(), b.end());
+    reverse(c.begin(), c.end());
+    if(b > c) cout << "YES" << endl;
+    else cout << "NO" << endl;
+    return ;
+}
+//============================================================================================================================================
+/*
+2026“钉耙编程”中国大学生算法设计暑期联赛（1）
+Problem D. 搭积木
+*/
+const int N = 200000 + 100;
+int n;
+int p[N];
+
+int find(int x){
+    if(x != p[x]) p[x] = find(p[x]);
+    return p[x];
+}
+
+struct Node{
+    int A, B, id;
+};
+
+struct cmp{
+    bool operator() (const Node &a, const Node &b) const{
+        return a.A * b.B < a.B * b.A;
+    }
+};
+
+void solve(){
+
+    cin >> n;
+
+    vector<int> a(n + 10), b(n + 10), f(n + 10);
+    for(int i = 1; i <= n; i ++) p[i] = i;
+
+    for(int i = 1; i <= n; i ++) cin >> a[i];
+    for(int i = 1; i <= n; i ++) cin >> b[i];
+    for(int i = 1; i <= n; i ++) cin >> f[i];
+
+    priority_queue<Node, vector<Node>, cmp> q;
+    for(int i = 1; i <= n; i ++) q.push({a[i], b[i], i});
+    vector<int> vis(n + 10);
+    int ans = 0;
+    while(q.size()){
+        Node t = q.top(); q.pop();
+        int u = t.id, fu = find(u);
+        
+        if(vis[u] || !f[u]) continue;
+        vis[u] = 1;
+        if(u != fu) continue;
+        int v = f[u], fv = find(v);
+        ans += a[fu] * b[fv];
+
+        a[fv] += a[fu];
+        b[fv] += b[fu];
+        p[fu] = fv;
+        q.push({a[fv], b[fv], fv});
+    }
+    cout << ans << endl;
+    return ;
+}
+//============================================================================================================================================
