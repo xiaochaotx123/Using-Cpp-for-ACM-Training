@@ -1,0 +1,502 @@
+//============================================================================================================================================
+/*
+https://codeforces.com/contest/1810/problem/E
+*/
+const int N = 200000 + 100;
+
+int n, m;
+vector<int> adj[N];
+int a[N];
+int vis[N];
+
+struct Node{
+    int u, num, state;
+};
+
+
+struct cmp{
+    bool operator() (const Node &a, const Node &b) const{
+        if(a.state != b.state) return a.state < b.state;
+        else return a.num > b.num; 
+    }
+};
+
+bool work(int root){
+
+    int cnt = 0;
+    priority_queue<Node, vector<Node>, cmp> q;
+    q.push({root, 0, 1});
+
+    while(q.size()){
+        Node t = q.top();
+        q.pop();
+        if(!t.state) break;
+        int u = t.u, num = t.num;
+
+        if(vis[u] == root) continue;
+        if(cnt >= num){
+            vis[u] = root;
+            cnt ++;
+            for(int v : adj[u]){
+                if(vis[v] == root) continue;
+                q.push({v, a[v], 1});
+            }
+        } 
+        else break;
+    }
+    if(cnt == n) return true;
+    else return false;
+}
+
+void solve(){
+
+    cin >> n >> m;
+    for(int i = 1; i <= n; i ++){
+        cin >> a[i];
+        adj[i].clear();
+        vis[i] = 0;
+    }
+
+    for(int i = 1; i <= m; i ++){
+        int u, v; cin >> u >> v;
+        adj[u].push_back(v);
+        adj[v].push_back(u);
+    }
+
+    for(int i = 1; i <= n; i ++){
+        if(a[i] == 0 && vis[i] == 0){
+            if(work(i)){
+                cout << "YES" << endl;
+                return ;
+            }
+        }
+    }
+    
+    cout << "NO" << endl;
+
+    return ;
+}
+//============================================================================================================================================
+/*
+https://codeforces.com/contest/1399/problem/E1
+*/
+const int N = 100000 + 100;
+
+int n, s;
+vector<int> adj[N];
+int cnt[N];
+int total_s;
+map<pair<int, int>, int> ma;
+map<pair<int, int>, int> fcnt;
+
+void dfs(int u, int fa){
+    for(int v : adj[u]){
+        if(v == fa) continue;
+        dfs(v, u);
+        cnt[u] += cnt[v];
+    }
+    fcnt[{min(u, fa), max(u, fa)}] = cnt[u];
+    return ;
+}
+
+struct cmp{
+    bool operator() (const PII &a, const PII &b) const{
+        int nex_a = a.first / 2;
+        int sum1 = (a.first - nex_a) * a.second;
+
+        int nex_b = b.first / 2;
+        int sum2 = (b.first - nex_b) * b.second;
+        return sum1 < sum2;
+    }
+};
+
+void solve(){
+
+    total_s = 0;
+    ma.clear();
+    fcnt.clear();
+
+    cin >> n >> s;
+    for(int i = 1; i <= n; i ++){
+        adj[i].clear();
+        cnt[i] = 0;
+    }
+
+    for(int i = 1; i <= n - 1; i ++){
+        int u, v, w; cin >> u >> v >> w;
+        if(u > v) swap(u, v);
+        ma[{u, v}] = w;
+        adj[u].push_back(v);
+        adj[v].push_back(u);
+    }
+
+    for(int i = 2; i <= n; i ++){
+        if(adj[i].size() == 1) cnt[i] = 1;
+    }
+
+    dfs(1, -1);
+
+    priority_queue<PII, vector<PII>, cmp> q;
+    for(int u = 1; u <= n; u ++){
+        for(int v : adj[u]){
+            if(u > v) continue;
+            total_s += ma[{u, v}] * fcnt[{u, v}];
+            q.push({ma[{u, v}], fcnt[{u, v}]});
+        }
+    }
+
+    // cout << "total_s == " << total_s << endl;
+    int ans = 0;
+    while(total_s > s){
+        PII t = q.top(); q.pop();
+        int now_cost = t.first, now_cnt = t.second;
+        int nex_cost = t.first / 2;
+
+        // cout << "bug == " << total_s << " " << now_cost << " " << now_cnt << endl;
+         
+        total_s -= (now_cost - nex_cost) * now_cnt;
+        ans ++;
+        if(nex_cost) q.push({nex_cost, now_cnt});
+    }
+
+    cout << ans << endl;
+    return ;
+}
+//============================================================================================================================================
+/*
+https://codeforces.com/problemset/problem/1399/E2
+*/
+const int N = 100000 + 100;
+
+map<PII, int> ma, fcnt, cost;
+int n, s;
+vector<int> adj[N];
+
+int cnt[N];
+int total_s;
+
+
+void dfs(int u, int fa){
+    for(int v : adj[u]){
+        if(v == fa) continue;
+        dfs(v, u);
+        cnt[u] += cnt[v];
+    }
+    fcnt[{min(u, fa), max(u, fa)}] = cnt[u];
+    return ;
+}
+
+
+struct cmp{
+    bool operator() (const PII &a, const PII &b) const{
+        int nex_a = a.first / 2;
+        int sum1 = (a.first - nex_a) * a.second;
+        
+        int nex_b = b.first / 2;
+        int sum2 = (b.first - nex_b) * b.second;
+
+        return sum1 < sum2;
+    }
+};
+
+void solve(){
+
+    total_s = 0;
+    ma.clear();
+    fcnt.clear();
+    cost.clear();
+
+    cin >> n >> s;
+    for(int i = 1; i <= n; i ++){
+        adj[i].clear();
+        cnt[i] = 0;
+    }
+
+    for(int i = 1; i <= n - 1; i ++){
+        int u, v, w, c; cin >> u >> v >> w >> c;
+        if(u > v) swap(u, v);
+        adj[u].push_back(v);
+        adj[v].push_back(u);
+        ma[{u, v}] = w;
+        cost[{u, v}] = c;
+    }
+
+    for(int i = 2; i <= n; i ++){
+        if(adj[i].size() == 1) cnt[i] = 1;
+    }
+    dfs(1, -1);
+    
+    priority_queue<PII, vector<PII>, cmp> q1, q2;
+
+    for(int u = 1; u <= n; u ++){
+        for(int v : adj[u]){
+            if(u > v) continue;
+            total_s += ma[{u, v}] * fcnt[{u, v}];
+            if(cost[{u, v}] == 1) q1.push({ma[{u, v}], fcnt[{u, v}]});
+            else q2.push({ma[{u, v}], fcnt[{u, v}]});
+        }
+    }
+
+    vector<int> pre1, pre2;
+    
+    int total_cost = 0;
+    pre1.push_back(total_cost);
+    pre2.push_back(total_cost);
+    while(q1.size()){
+        PII t = q1.top(); q1.pop();
+        int now_cost = t.first, now_cnt = t.second;
+        int nex_cost = t.first / 2;
+        total_cost += (now_cost - nex_cost) * now_cnt;
+        pre1.push_back(total_cost);
+        if(nex_cost) q1.push({nex_cost, now_cnt});
+    }
+    total_cost = 0;
+    while(q2.size()){
+        PII t = q2.top(); q2.pop();
+        int now_cost = t.first, now_cnt = t.second;
+        int nex_cost = t.first / 2;
+        total_cost += (now_cost - nex_cost) * now_cnt;
+        pre2.push_back(total_cost);
+        if(nex_cost) q2.push({nex_cost, now_cnt});        
+    }
+
+    int ans = inf;
+    for(int i = 0; i < (int)pre1.size(); i ++){
+        // total_s - pre1[i] - pre1[j] <= s;
+        // pre1[i] + pre2[j] >= total_s - s;
+        int l = 0, r = (int)pre2.size() - 1, pos = -1;
+        while(l <= r){
+            int mid = (l + r) / 2;
+            if(pre1[i] + pre2[mid] >= total_s - s){
+                pos = mid;
+                r = mid - 1;
+            }
+            else l = mid + 1;
+        }
+        if(pos != -1) ans = min(ans, i + 2 * pos);
+    }
+    cout << ans << endl;
+    return ;
+}
+//============================================================================================================================================
+/*
+https://vjudge.net/problem/CodeForces-1805D
+首先求出树的直径两个端点A和B，对于树中的任意一个节点u来说，u到其他节点v的最远距离一定是max(dist(u, A), dist(u, B))
+所以将k从n到1开始枚举，如果比i大，那么连通块的数量就减1
+*/
+const int N = 100000 + 100;
+int dia1, dia2;
+
+int n;
+vector<int> adj[N];
+int dist1[N], dist2[N];
+
+void dfs(int u, int fa, int dep){
+    dist1[u] = dep; 
+    for(int v : adj[u]){
+        if(v == fa) continue;
+        dfs(v, u, dep + 1);
+    }
+}
+
+void dfs1(int u, int fa, int dep){
+    dist2[u] = dep; 
+    for(int v : adj[u]){
+        if(v == fa) continue;
+        dfs1(v, u, dep + 1);
+    }
+}
+
+bool cmp(PII a, PII b){
+    return a.second > b.second;
+}
+
+void solve(){
+
+    cin >> n;
+    for(int i = 1; i <= n - 1; i ++){
+        int u, v; cin >> u >> v;
+        adj[u].push_back(v);
+        adj[v].push_back(u);
+    }
+    dfs(1, -1, 0);
+    int max_dep = -1;
+    for(int i = 1; i <= n; i ++){
+        if(dist1[i] > max_dep){
+            max_dep = dist1[i];
+            dia1 = i;
+        }
+    }
+
+    dfs(dia1, -1, 0);
+
+    max_dep = -1;
+    for(int i = 1; i <= n; i ++){
+        if(dist1[i] > max_dep){
+            max_dep = dist1[i];
+            dia2 = i;
+        }
+    }
+
+    dfs1(dia2, -1, 0);
+
+    vector<PII> d(n + 10);
+    for(int i = 1; i <= n; i ++){
+        d[i] = {i, max(dist1[i], dist2[i])};
+    }
+
+    sort(d.begin() + 1, d.begin() + 1 + n, cmp);
+    int ans = n, idx = 1;
+    vector<int> fans;
+
+    for(int i = n; i >= 1; i --){
+        while(d[idx].second >= i){
+            idx ++;
+            ans --;
+        }
+        fans.push_back(min(n, ans + 1));
+    }
+    // cout << "-----------" << endl;
+
+    // cout << dia1 << " " << dia2 << endl;
+    // cout << "-----------" << endl;
+    // for(int i = 1; i <= n; i ++) cout << d[i].fi << " " << d[i].se << endl;
+    // cout << endl;
+
+    reverse(fans.begin(), fans.end());
+    for(int x : fans) cout << x << " ";
+    cout << endl;
+    return ;
+}
+/*
+使用队列更好，dfs可能会爆栈！
+*/
+const int N = 200000 + 100;
+
+int n;
+vector<int> adj[N];
+
+int distA[N], distB[N];
+
+
+void bfs(int start, int dist[]){
+    fill(dist, dist + 1 + n, -1);
+    queue<int> q;
+    q.push(start);
+    dist[start] = 0;
+    while(q.size()){
+        int u = q.front(); q.pop();
+        for(int v : adj[u]){
+            if(dist[v] == -1){
+                dist[v] = dist[u] + 1;
+                q.push(v);
+            }
+        }
+    }
+}
+
+bool cmp(int a, int b){
+    return a > b;
+}
+
+void solve(){
+
+    cin >> n;
+    for(int i = 1; i <= n - 1; i ++){
+        int u, v; cin >> u >> v;
+        adj[u].push_back(v);
+        adj[v].push_back(u);
+    }    
+
+    bfs(1, distA);
+    int dia1 = 1;
+    for(int i = 1; i <= n; i ++) if(distA[i] > distA[dia1]) dia1 = i;
+
+    bfs(dia1, distA);
+    int dia2 = 1;
+    for(int i = 1; i <= n; i ++) if(distA[i] > distA[dia2]) dia2 = i;
+
+    bfs(dia2, distB);
+
+    vector<int> d(n + 10);
+    for(int i = 1; i <= n; i ++) d[i] = max(distA[i], distB[i]);
+
+    sort(d.begin() + 1, d.begin() + 1 + n, cmp);
+    vector<int> fans;
+    int idx = 1;
+    for(int i = n; i >= 1; i --){
+        while(idx <= n && d[idx] >= i){
+            idx ++;
+        }
+        if(idx == 1) fans.push_back(n);
+        else fans.push_back(n - idx + 2);
+    }
+
+    for(int i = n - 1; i >= 0; i --) cout << fans[i] << " ";
+    cout << endl;
+
+    return ;
+}
+//============================================================================================================================================
+/*
+https://ac.nowcoder.com/acm/problem/260447
+这样搜索是没问题的，但是我做的时候忽略了一个东西就是dfs(x / 2 + (1LL << 19), step + 1);
+因为逆向搜索的过程中有两种：要么减去1，要么除以2
+减去1，当x是奇数和偶数的时候都可以，所以是dfs(x - 1, step + 1)
+除以2，只有当x是偶数的时候才可以，所以是dfs(x / 2, step + 1)
+
+得思考为什么是逆向搜索的，因为多组测试，所以如果对于每一个n来说，我都执行加1或者乘2的操作，那么一定超时
+所以我只搜索一遍，从目标点M开始搜索：
+对于加1操作，就是(y + 1) % M = x % M, 那么k1 × M + y + 1 = k2 × M + x
+所以y = (k2 - k2) × M + x - 1，所以下一步应该是搜索..., y = -M + x - 1, y = x - 1, y = M + x - 1, ...
+所以因当是：
+dfs(-M + x - 1, step + 1)
+dfs(x - 1, step + 1)
+dfs(M + x - 1, step + 1)
+
+对于除2操作也是一样的：
+dfs(x / 2 - (1LL << 19), step + 1)
+dfs(x / 2, step + 1)
+dfs(x / 2 + (1LL << 19), step + 1)
+
+剪枝操作：
+如果x为负数或者x大于2×M，直接跳过
+如果当前的步数超过了20步，直接跳过
+如果现在的step已经大于等于了ans[x]，直接跳过
+*/
+const int M = (1LL << 20);
+int ans[2 * M + 100];
+
+void dfs(int x, int step){
+    if(x < 0 || x > 2 * M || step >= 21 || step >= ans[x]) return ;
+    ans[x] = min(ans[x], step);
+    dfs(-M + x - 1, step + 1);
+    dfs(x - 1, step + 1);
+    dfs(M + x - 1, step + 1);
+    if(!(x & 1)){
+        dfs(x / 2 - (1LL << 19), step + 1);
+        dfs(x / 2, step + 1);
+        dfs(x / 2 + (1LL << 19), step + 1);
+    }
+}
+
+void solve(){
+
+    int n; cin >> n;
+    n %= M;
+    cout << min(ans[n], 20LL) << endl;
+    return ;
+}
+
+signed main(){
+    HelloWorld;
+
+    fill(ans, ans + 1 + 2 * M, inf);
+    ans[0] = 0;
+    dfs(M, 0);
+    int tt = 1; 
+    if(HAVE_CASE) cin >> tt;
+    while(tt --) solve();
+    return 0;
+}
+//============================================================================================================================================
