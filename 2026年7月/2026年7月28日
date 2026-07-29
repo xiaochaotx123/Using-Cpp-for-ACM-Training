@@ -1,0 +1,598 @@
+//============================================================================================================================================
+/*
+https://www.matiji.net/exam/brushquestion/207/3181/1DC60EA6DF83A333301CFFE1407FBA59
+*/
+int gcd(int a, int b){
+    if(!b) return a;
+    else return gcd(b, a % b);
+}
+
+int Case = 0;
+void solve(){
+
+    int n; cin >> n;
+
+    int ans = 0;
+    for(int i = 1; i <= n; i ++){
+        for(int j = 1; j <= n; j ++){
+            if(gcd(i, j) == 1){
+                ans ++;
+            }
+        }
+    }
+    cout << ++Case << " " << n << " " << ans + 2 << endl;
+    return ;
+}
+/*
+线性求欧拉函数
+*/
+const int N = 1000000 + 100;
+
+int prime[N], idx;
+int vis[N];
+int phi[N];
+
+void euler(){
+    phi[1] =1 ;
+    for(int i = 2; i < N; i ++){
+        if(!vis[i]){
+            prime[++ idx] = i;
+            phi[i] = i - 1;
+        }
+        for(int j = 1; j <= idx && prime[j] <= N / i; j ++){
+            vis[i * prime[j]] = 1;
+            if(i % prime[j] == 0){
+                phi[i * prime[j]] = phi[i] * prime[j];
+                break;
+            }
+            else phi[i * prime[j]] = phi[i] * (prime[j] - 1);
+        }
+    }
+}
+
+int Case = 0;
+void solve(){
+
+    int n, ans = 0; cin >> n;
+    for(int i = 1; i <= n; i ++) ans += phi[i];
+
+    cout << ++Case << " " << n << " " << 2 * ans + 1 << endl;
+    return ;
+}
+
+signed main(){
+    HelloWorld;
+
+    euler();
+    int tt = 1; 
+    if(HAVE_CASE) cin >> tt;
+    while(tt --) solve();
+    return 0;
+}
+//============================================================================================================================================
+/*
+https://www.matiji.net/exam/brushquestion/208/3181/1DC60EA6DF83A333301CFFE1407FBA59
+*/
+int gcd(int a, int b){
+    if(!b) return a;
+    else return gcd(b, a % b);
+}
+
+void solve(){
+
+    int n; cin >> n;
+    vector<int> a(n + 10);
+    for(int i = 1; i <= n; i ++) cin >> a[i];
+    sort(a.begin() + 1, a.begin() + 1 + n);
+    
+    int g = 0;
+    for(int i = 1; i <= n; i ++){
+        for(int j = i + 1; j <= n; j ++){
+            g = gcd(g, a[j] - a[i]);
+        }
+    }
+    if(g) cout << g << endl;
+    else cout << -1 << endl;
+    return ;
+}
+//============================================================================================================================================
+/*
+https://www.matiji.net/exam/brushquestion/209/3181/1DC60EA6DF83A333301CFFE1407FBA59
+*/
+int gcd(int a, int b){
+    if(!b) return a;
+    else return gcd(b, a % b);
+}
+
+int lcm(int a, int b){
+    return a / gcd(a, b) * b;
+}
+void solve(){
+
+    int n; cin >> n;
+    string s1, s2; cin >> s1 >> s2;
+    int n1 = (int)s1.size(), n2 = (int)s2.size();
+    int len = lcm(n1, n2);
+    string s11 = "", s22 = "";
+    for(int i = 1; i <= len / n1; i ++) s11 += s1;
+    for(int i = 1; i <= len / n2; i ++) s22 += s2;
+    
+    int cnt1 = 0, cnt2 = 0;
+    for(int i = 0; i < len; i ++){
+        if(s11[i] == 'R'){
+            if(s22[i] == 'P') cnt2 ++;
+            if(s22[i] == 'S') cnt1 ++;
+        }
+        else if(s11[i] == 'P'){
+            if(s22[i] == 'R') cnt1 ++;
+            if(s22[i] == 'S') cnt2 ++;
+        }
+        else{
+            if(s22[i] == 'R') cnt2 ++;
+            if(s22[i] == 'P') cnt1 ++;
+        }
+    }
+    int fans1 = (n / len) * cnt1, fans2 = (n / len) * cnt2;
+    n %= len;
+    for(int i = 0; i < n; i ++){
+        if(s11[i] == 'R'){
+            if(s22[i] == 'P') fans2 ++;
+            if(s22[i] == 'S') fans1 ++;
+        }
+        else if(s11[i] == 'P'){
+            if(s22[i] == 'R') fans1 ++;
+            if(s22[i] == 'S') fans2 ++;
+        }
+        else{
+            if(s22[i] == 'R') fans2 ++;
+            if(s22[i] == 'P') fans1 ++;
+        }        
+    }
+    cout << fans2 << " " << fans1 << endl;
+    return ;
+}
+//============================================================================================================================================
+/*
+https://www.matiji.net/exam/brushquestion/210/3181/1DC60EA6DF83A333301CFFE1407FBA59
+*/
+void solve(){
+
+    int n, ans = 0; cin >> n;
+    for(int i = 1; i <= n; i ++){
+        int l = i, r = n / (n / i);
+        ans += (r - l + 1) * (n / i);
+        i = r;
+    }
+    cout << ans << endl;
+    return ;
+}
+//============================================================================================================================================
+/*
+https://www.matiji.net/exam/brushquestion/211/3181/1DC60EA6DF83A333301CFFE1407FBA59
+*/
+void solve(){
+
+    int n, ans = 0; cin >> n;
+    for(int i = 1; i <= n; i ++){
+        int l = i, r = n / (n / i);
+        int x = n / i;
+        ans += (l + r) * (r - l + 1) / 2 * x;
+        i = r;
+    }
+    cout << ans << endl;
+    
+    return ;
+}
+//============================================================================================================================================
+/*
+https://vjudge.net/problem/CodeForces-580C/origin
+*/
+const int N = 100000 + 100;
+int n, m;
+vector<int> adj[N];
+int a[N];
+int ans;
+
+void dfs(int u, int fa, int cnt){
+    if(u != 1 && adj[u].size() == 1) ans ++;
+    for(int v : adj[u]){
+        if(v == fa) continue;
+        if(!a[v]) dfs(v, u, 0);
+        else{
+            if(cnt + 1 <= m) dfs(v, u, cnt + 1);
+        }
+    }
+    return ;
+}
+
+void solve(){
+
+    cin >> n >> m;
+    for(int i = 1; i <= n; i ++) cin >> a[i];
+    for(int i = 1; i <= n - 1; i ++){
+        int u, v; cin >> u >> v;
+        adj[u].push_back(v);
+        adj[v].push_back(u);
+    }
+    
+    if(a[1]) dfs(1, -1, 1);
+    else dfs(1, -1, 0);
+    cout << ans << endl;
+    return ;
+}
+//============================================================================================================================================
+/*
+2026“钉耙编程”中国大学生算法设计暑期联赛（3）
+1010 Random
+*/
+const int MOD = 998244353;
+
+int power(int base, int p) {
+    int res = 1;
+    while (p) {
+        if (p & 1)
+            res = res * base % MOD;
+        base = base * base % MOD;
+        p >>= 1;
+    }
+    return res;
+}
+
+void ylh_() {
+    int w, l;
+    cin >> w >> l;
+    int ans = (power(w, l) + l - 1) % MOD;
+    cout << ans << '\n';
+}
+//============================================================================================================================================
+/*
+2026“钉耙编程”中国大学生算法设计暑期联赛（3）
+1005 GCD
+
+最多的次数取决于质因子的个数，而且是对半操作
+例如对于x的质因子中出现的次数最大的为cnt
+如果
+cnt = 1，那么1次
+cnt = 2，那么2次
+cnt = 3，那么2次
+cnt = 4，那么3次
+cnt = 5，那么3次
+cnt = 6，那么3次
+cnt = 7，那么3次
+cnt = 8，那么4次
+所以答案就是__lg(cnt) + 1
+
+那么如何求质因子出现最大的次数cnt呢？因为x最大有1e18，所以不能直接质因数分解
+首先对x进行1000000内的质因数分解，得到一个最大的cnt；现在x在1000000内的质因子已经分解完了，所以剩下的质因子一定大于1000000
+而且最多只有2个，如果有3个大于1000000的质因子，其乘积就大于1e18了
+现在就继续判断x是不是两个质因子的乘积，如果是，那么cnt与2取一下最大值即可
+*/
+void solve(){
+
+    int n; cin >> n;
+    int cnt = 1;
+    for(int i = 2; i <= 1000000; i ++){
+        int now_cnt = 0;
+        while(n % i == 0){
+            now_cnt ++;
+            n /= i;
+        }
+        cnt = max(cnt, now_cnt);
+    }
+
+    if(n > 1){
+        int x = sqrt(n);
+        if(x * x == n) cnt = max(cnt, 2LL);
+    }
+    
+    cout << __lg(cnt) + 1 << endl;
+    return ;
+}
+//============================================================================================================================================
+/*
+2026“钉耙编程”中国大学生算法设计暑期联赛（3）
+1003 Best
+
+因为现在的一个a[i]大于等于前面所有的值的和，那么值的和是不断的翻倍过程
+就拿最小的例子来说：如果a[1] = 1
+那么a[2]最小为1，a[3]最小为a[1]+a[2]=2，a[4]最小为a[1]+a[2]+a[3]=4，a[5]最小为8，a[6]最小为16.....这是最小的情况：
+当长度为66的时候，a[66]最小为2的64次方，已经大于的最大范围1e18，所以序列的最大长度不会超过66
+
+定义dp[i]表示长度为i的时候最后一个数最小为多少
+*/
+void solve(){
+
+    int n; cin >> n;
+    vector<int> a(n + 10), dp(66, inf);
+    for(int i = 1; i <= n; i ++) cin >> a[i];
+    dp[0] = 0;
+
+    for(int i = 1; i <= n; i ++){
+        for(int j = 64; j >= 1; j --){
+            if(a[i] >= dp[j - 1]) dp[j] = min(dp[j], dp[j - 1] + a[i]);
+        }
+    }
+
+    for(int i = 64; i >= 1; i --){
+        if(dp[i] != inf){
+            cout << i << endl;
+            return ;
+        }
+    }
+
+    return ;
+}
+//============================================================================================================================================
+/*
+2026“钉耙编程”中国大学生算法设计暑期联赛（3）
+1009 Six Grade
+
+显然一定会存在环，如果一个环上有k个点，那么期望就是k/2；对于不是环上的点期望就是1
+因为环上点的度数永远是2，所以可以直接使用队列不断的删除度数即可；当度数为0时，说明不是环上的点，cnt ++即可
+那么n - cnt就是所有环上的点了
+*/
+const int N = 1000000 + 100;
+const int mod = 998244353;
+int n;
+vector<int> adj[N];
+
+int ksm(int a, int b, int p){
+    int sum = 1;
+    while(b){
+        if(b & 1) sum = (sum * a) % p;
+        b >>= 1;
+        a = (a * a) % p;
+    }
+    return sum;
+}
+
+void solve(){
+
+    cin >> n;
+    for(int i = 1; i <= n; i ++) adj[i].clear();
+    vector<int> deg(n + 10);
+    for(int i = 1; i <= n; i ++){
+        int u, v; cin >> u >> v;
+        adj[u].push_back(v);
+        adj[v].push_back(u);
+        deg[u] ++;
+        deg[v] ++;
+    }     
+    int cnt = 0;
+    queue<int> q;
+    for(int i = 1; i <= n; i ++){
+        if(deg[i] == 1) q.push(i);
+    }
+    while(q.size()){
+        int u = q.front(); q.pop(); 
+        cnt ++;
+        for(int v : adj[u]){
+            if(-- deg[v] == 1) q.push(v);
+        }
+    }
+    cout << (cnt + (n - cnt) * ksm(2, mod - 2, mod)) % mod << endl;
+    return ;
+}
+//============================================================================================================================================
+/*
+2026“钉耙编程”中国大学生算法设计暑期联赛（3）
+1006 Special Judge
+*/
+void solve(){
+
+    int n; cin >> n;
+    int m = (n & 1 ? n : n - 1);
+
+    vector<int> ans;
+    vector<int> pos(n + 10);
+    for(int i = m; i >= 1; i -= 2){
+
+        pos[i] = 0;
+        for(int j = m; j > i; j -= 2){
+            if(j % i == 0){
+                pos[i] = max(pos[i], pos[j] + 1);
+            }
+        }
+
+        ans.push_back(i << pos[i]);
+    }
+    cout << sz(ans) << endl;
+    sort(all(ans));
+    for(int x : ans) cout << x << " ";
+    cout << endl;
+    return ;
+}
+//============================================================================================================================================
+/*
+https://www.nowcoder.com/practice/dce720a218b74b90a2b8818f576b3c05?channelPut=tracker2
+*/
+map<int, int> ma, rma;
+int idx;
+
+
+const int N = 1000000;
+struct Node{
+    int l, r;
+    int cnt;
+}tr[4 * N];
+
+void push_up(int u){
+    tr[u].cnt = (tr[u << 1].cnt + tr[u << 1 | 1].cnt);
+}
+
+void build(int u, int l, int r){
+    if(l == r){
+        tr[u] = {l, r, 0};
+        return ;
+    }
+    else{
+        tr[u] = {l, r, 0};
+        int mid = (tr[u].l + tr[u].r) >> 1;
+        build(u << 1, l, mid);
+        build(u << 1 | 1, mid + 1, r);
+    }
+}
+
+void modify(int u, int x){
+    if(tr[u].l == tr[u].r){
+        tr[u].cnt ++;
+        return ;
+    }
+    else{
+        int mid = (tr[u].l + tr[u].r) >> 1;
+        if(x <= mid) modify(u << 1, x);
+        else modify(u << 1 | 1, x);
+        push_up(u);
+    }
+}
+
+void erase_modify(int u, int x){
+    if(tr[u].l == tr[u].r){
+        tr[u].cnt --;
+        return ;
+    }
+    else{
+        int mid = (tr[u].l + tr[u].r) >> 1;
+        if(x <= mid) erase_modify(u << 1, x);
+        else erase_modify(u << 1 | 1, x);
+
+        push_up(u);
+    }
+}
+
+int query(int u, int x){
+    if(tr[u].l == tr[u].r) return tr[u].l;
+    else{
+        if(x <= tr[u << 1].cnt) return query(u << 1, x);
+        else return query(u << 1 | 1, x - tr[u << 1].cnt); 
+    }
+}
+
+void solve(){
+
+    
+    int n, q; cin >> n >> q;
+    vector<int> a(n + 10), b;
+    for(int i = 1; i <= n; i ++){
+        cin >> a[i];
+        b.pb(a[i]);
+    }
+    sort(b.begin(), b.end());
+    for(int x : b){
+        if(ma.count(x) == 0){
+            ma[x] = ++ idx;
+            rma[idx] = x;
+        }
+    }
+
+    int len = 0;
+
+    vector<PII> query_ans;
+    while(q --){
+        int l, r; cin >> l >> r;
+        query_ans.pb({l, r});
+        len = r - l+ 1;
+    }
+
+    build(1, 1, n);
+    for(int i = 1; i < len; i ++) modify(1, ma[a[i]]);
+
+    vector<int> ans(n + 10);
+    for(int i = len; i <= n; i ++){
+        modify(1, ma[a[i]]);
+        ans[i] = rma[query(1, len / 2 + 1)];
+        erase_modify(1, ma[a[i - len + 1]]);
+    }
+    
+    for(auto [l, r] : query_ans) cout << ans[r] << endl;
+    return ;
+}
+//============================================================================================================================================
+/*
+https://www.matiji.net/exam/brushquestion/212/3181/1DC60EA6DF83A333301CFFE1407FBA59
+*/
+void solve(){
+
+    
+    int n, f; cin >> n >> f;
+    int ans = 0;
+    if(n > f){
+        ans += (n - f) * f;
+        n = f;
+    }
+    
+    ans += n * f;
+    for(int i = 1; i <= n; i ++){
+        int l = i, r = min(n, f / (f / i));
+        int x = f / i;
+        int sum = (l + r) * (r - l + 1) / 2 * x;
+        ans -= sum;
+        i = r;
+    }
+    cout << ans << endl;
+    return ;
+}
+//============================================================================================================================================
+/*
+https://www.matiji.net/exam/brushquestion/213/3181/1DC60EA6DF83A333301CFFE1407FBA59
+*/
+const int N = 100000000;
+
+int prime[N + 1], idx;
+bool vis[N + 1];
+
+void get_prime(int n){
+    for(int i = 2; i <= n; i ++){
+        if(!vis[i]) prime[++ idx] = i;
+        for(int j = 1; j <= idx && prime[j] <= n / i; j ++){
+            vis[prime[j] * i] = true;
+            if(i % prime[j] == 0) break;
+        }
+    }
+}
+
+void solve(){
+    
+    int n; cin >> n;
+    if(n == 0) cout << "0.000" << endl;
+    else{
+        get_prime(n);
+        cout << fixed << setprecision(3) << idx * 1.0 / n << endl;    
+    }
+
+    return ;
+}
+//============================================================================================================================================
+/*
+https://www.matiji.net/exam/brushquestion/214/3181/1DC60EA6DF83A333301CFFE1407FBA59
+*/
+const int N = 10000 + 100;
+
+int prime[N], idx;
+bool vis[N];
+
+void get_prime(){
+    for(int i = 2; i < N; i ++){
+        if(!vis[i]) prime[++ idx] = i;
+        for(int j = 1; j <= idx && prime[j] <= N / i; j ++){
+            vis[i * prime[j]] = true;
+            if(i % prime[j] == 0) break;
+        }
+    }
+}
+
+void solve(){
+    
+    vector<PII> ans;
+    int n, m; cin >> n >> m;
+    for(int i = 1; i <= idx; i ++){
+        if(prime[i] + m > n) break;
+        if(!vis[prime[i] + m]) ans.pb({prime[i], prime[i] + m});
+    }
+    if(!sz(ans)) cout << "empty" << endl;
+    else{
+        for(auto [x, y] : ans) cout << x << " " << y << endl;
+    }
+    return ;
+}
+//============================================================================================================================================
