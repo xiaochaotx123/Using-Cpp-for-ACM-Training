@@ -1,0 +1,781 @@
+//============================================================================================================================================
+/*
+https://www.matiji.net/exam/brushquestion/215/3181/1DC60EA6DF83A333301CFFE1407FBA59
+*/
+#include<bits/stdc++.h>
+using namespace std;
+
+#define endl '\n'
+// #define int long long
+#define ull unsigned long long
+#define IOS ios::sync_with_stdio(false);cin.tie(NULL);cout.tie(NULL);
+#define HelloWorld IOS;
+
+using PII = pair<int, int>;
+#define fi first
+#define se second
+#define pb push_back
+#define sz(x) ((int)(x).size())
+#define all(x) (x).begin(), (x).end()
+const int inf = 3000000000000000000;
+const int rinf = -3000000000000000000;
+const bool HAVE_CASE = true;
+
+
+const int N = 10000000 + 10;
+bool vis[N];
+
+bool check(int x){
+    while(x){
+        int num = x % 10;
+        if(num == 7) return true;
+        x /= 10;
+    }
+    return false;
+}
+
+void init(){
+    for(int i = 0; i < N; i ++){
+        if(i % 7 == 0) vis[i] = true;
+    }
+
+    for(int i = 1; i < N; i ++){
+        if(check(i)){
+            vis[i] = true;
+            for(int j = 2; i * j < N; j ++) vis[i * j] = true;
+        }
+    }
+}
+
+void solve(){
+    
+    int n; cin >> n;
+    if(vis[n]){
+        cout << -1 << endl;
+        return ;
+    }
+    n ++;
+    while(vis[n]) n ++;
+    cout << n << endl;    
+    return ;
+}
+
+int main(){
+    HelloWorld;
+
+    init();
+
+    int tt = 1; 
+    if(HAVE_CASE) cin >> tt;
+    while(tt --) solve();
+    return 0;
+}
+//============================================================================================================================================
+/*
+https://www.matiji.net/exam/brushquestion/216/3181/1DC60EA6DF83A333301CFFE1407FBA59
+*/
+#include<bits/stdc++.h>
+using namespace std;
+
+#define endl '\n'
+// #define int long long
+#define ull unsigned long long
+#define IOS ios::sync_with_stdio(false);cin.tie(NULL);cout.tie(NULL);
+#define HelloWorld IOS;
+
+using PII = pair<int, int>;
+#define fi first
+#define se second
+#define pb push_back
+#define sz(x) ((int)(x).size())
+#define all(x) (x).begin(), (x).end()
+// const int inf = 3000000000000000000;
+// const int rinf = -3000000000000000000;
+const bool HAVE_CASE = false;
+
+
+const int N = 10000000 + 10;
+bool vis[N];
+vector<int> ans;
+
+int get_digit(int x){
+    int res = 0;
+    while(x){
+        res += x % 10;
+        x /= 10;
+    }
+    return res;
+}
+
+void init(){
+    for(int i = 1; i < N; i ++){
+        if(!vis[i]) ans.pb(i);
+        int num = i + get_digit(i);
+        if(num >= N) continue;
+        vis[num] = 1;
+    }
+}
+
+void solve(){
+    
+    int n, k; cin >> n >> k;
+    vector<int> b(k + 10);
+    for(int i = 1; i <= k; i ++) cin >> b[i];
+
+    int l = 0, r = (int)ans.size() - 1, pos = 0;
+    while(l <= r){
+        int mid = (l + r) / 2;
+        if(ans[mid] <= n){
+            pos = mid;
+            l = mid + 1;
+        }
+        else r = mid - 1;
+    }
+    cout << pos + 1 << endl;
+    for(int i = 1; i <= k; i ++) cout << ans[b[i] - 1] << " ";
+    cout << endl;
+
+    return ;
+}
+
+int main(){
+    HelloWorld;
+
+    init();
+    int tt = 1; 
+    if(HAVE_CASE) cin >> tt;
+    while(tt --) solve();
+    return 0;
+}
+//============================================================================================================================================
+/*
+https://www.matiji.net/exam/brushquestion/217/3181/1DC60EA6DF83A333301CFFE1407FBA59
+*/
+void solve(){
+
+    int n, ans = 0; cin >> n;
+    for(int i = 2; i * i <= n; i ++){
+        while(n % i == 0){
+            ans ++;
+            n /= i;
+        }
+    }
+    cout << ans + (n > 1) << endl;
+    return ;
+}
+//============================================================================================================================================
+/*
+https://www.matiji.net/exam/brushquestion/218/3181/1DC60EA6DF83A333301CFFE1407FBA59
+*/
+#include<bits/stdc++.h>
+using namespace std;
+
+#define endl '\n'
+#define int long long
+#define ull unsigned long long
+#define IOS ios::sync_with_stdio(false);cin.tie(NULL);cout.tie(NULL);
+#define HelloWorld IOS;
+
+using PII = pair<int, int>;
+#define fi first
+#define se second
+#define pb push_back
+#define sz(x) ((int)(x).size())
+#define all(x) (x).begin(), (x).end()
+const int inf = 3000000000000000000;
+const int rinf = -3000000000000000000;
+const bool HAVE_CASE = false;
+
+
+const int N = 1000000 + 100;
+
+int prime[N], idx;
+bool vis[N];
+
+int cnt[N];
+void get_prime(){
+    for(int i = 2; i < N; i ++){
+        if(!vis[i]) prime[++ idx] = i;
+        for(int j = 1; j <= idx && prime[j] <= N / i; j ++){
+            vis[i * prime[j]] = true;
+            if(i % prime[j] == 0) break;
+        }
+    }
+}
+
+void solve(){
+    
+    int n; cin >> n;
+    for(int i = 1; i <= idx; i ++){
+        if(prime[i] > n) break;
+        int cnt = 0, x = n;
+        while(x){
+            cnt += x / prime[i];
+            x /= prime[i];
+        }
+        cout << prime[i] << " " << cnt << endl;
+    }
+    return ;
+}
+
+signed main(){
+    HelloWorld;
+
+    get_prime();
+    int tt = 1; 
+    if(HAVE_CASE) cin >> tt;
+    while(tt --) solve();
+    return 0;
+}
+//============================================================================================================================================
+/*
+https://www.matiji.net/exam/brushquestion/19/4347/179CE77A7B772D15A8C00DD8198AAC74
+
+直接对x到1的所有数进行质因数分解，至于其次幂，直接与质因子出现的次数相乘：比如8^3：因为6中的质因子2出现了3次，那么8^3的质因子2就出现了3*3=9次！
+因为数据范围很大，虽然最大只有1e7，但是经过次方相乘之后的质因子比如2的个数需要使用long long！
+*/
+#include<bits/stdc++.h>
+using namespace std;
+
+#define endl '\n'
+#define int long long
+#define ull unsigned long long
+#define IOS ios::sync_with_stdio(false);cin.tie(NULL);cout.tie(NULL);
+#define HelloWorld IOS;
+
+using PII = pair<int, int>;
+#define fi first
+#define se second
+#define pb push_back
+#define sz(x) ((int)(x).size())
+#define all(x) (x).begin(), (x).end()
+const int inf = 3000000000000000000;
+const int rinf = -3000000000000000000;
+const bool HAVE_CASE = false;
+
+
+const int N = 10000000 + 100;
+int prime[1000000 + 100], idx;
+bool vis[N];
+int min_prime[N];
+int cnt[N];
+
+void get_prime(){
+    for(int i = 2; i < N; i ++){
+        if(!vis[i]){
+            prime[++ idx] = i;
+            min_prime[i] = i;
+        }
+        for(int j = 1; j <= idx && prime[j] <= N / i; j ++){
+            vis[i * prime[j]] = true;
+            min_prime[i * prime[j]] = prime[j];
+            if(i % prime[j] == 0) break;
+        }
+    }
+}
+
+void work(int n, int mul){
+    while(n > 1){
+        cnt[min_prime[n]] += mul;
+        n /= min_prime[n];
+    }
+}
+
+void solve(){
+    
+    int n; cin >> n;
+    for(int i = n; i >= 2; i --) work(i, n - i + 1);
+
+    int final_pos = 1;
+    for(int i = 1; i <= idx; i ++){
+        if(cnt[prime[i]]) final_pos = i;
+    }
+    cout << "f(" << n << ")=";
+
+    for(int i = 1; i < final_pos; i ++){
+        if(cnt[prime[i]]){
+            cout << prime[i];
+            if(cnt[prime[i]] > 1) cout << "^" << cnt[prime[i]];
+            cout << "*";
+        }
+    }
+    cout << prime[final_pos];
+    if(cnt[prime[final_pos]] > 1) cout << "^" << cnt[prime[final_pos]];
+    cout << endl;
+    return ;
+}
+
+signed main(){
+    HelloWorld;
+
+    get_prime();
+    int tt = 1; 
+    if(HAVE_CASE) cin >> tt;
+    while(tt --) solve();
+    return 0;
+}
+//============================================================================================================================================
+/*
+https://www.matiji.net/exam/brushquestion/219/3181/1DC60EA6DF83A333301CFFE1407FBA59
+*/
+void solve(){
+    
+    int n; cin >> n;
+    int ans = n;
+    for(int i = 2; i * i <= n; i ++){
+        if(n % i == 0){
+            ans = ans / i * (i - 1);
+            while(n % i == 0) n /= i;
+        }
+    }
+    if(n > 1) ans = ans / n * (n - 1);
+    cout << ans << endl;
+    return ;
+}
+//============================================================================================================================================
+/*
+https://www.matiji.net/exam/brushquestion/220/3181/1DC60EA6DF83A333301CFFE1407FBA59
+*/
+#include<bits/stdc++.h>
+using namespace std;
+
+#define endl '\n'
+#define int long long
+#define ull unsigned long long
+#define IOS ios::sync_with_stdio(false);cin.tie(NULL);cout.tie(NULL);
+#define HelloWorld IOS;
+
+using PII = pair<int, int>;
+#define fi first
+#define se second
+#define pb push_back
+#define sz(x) ((int)(x).size())
+#define all(x) (x).begin(), (x).end()
+const int inf = 3000000000000000000;
+const int rinf = -3000000000000000000;
+const bool HAVE_CASE = false;
+
+
+const int N = 1000000 + 100;
+
+int prime[N], idx;
+bool vis[N];
+int phi[N];
+
+void get_phi(){
+    phi[1] = 1;
+    for(int i = 2; i < N; i ++){
+        if(!vis[i]){
+            prime[++ idx] = i;
+            phi[i] = i - 1;
+        }
+        for(int j = 1; j <= idx && prime[j] <= N / i; j ++){
+            vis[i * prime[j]] = 1;
+            if(i % prime[j] == 0){
+                phi[i * prime[j]] = phi[i] * prime[j];
+                break;
+            }
+            else phi[i * prime[j]] = phi[i] * (prime[j] - 1);
+        }
+    }    
+}
+
+void solve(){
+    
+    int n; cin >> n;
+    int ans = 0;
+    for(int i = 1; i <= n; i ++) ans += phi[i];
+    cout << ans << endl;
+    return ;
+}
+
+signed main(){
+    HelloWorld;
+
+    get_phi();
+    int tt = 1; 
+    if(HAVE_CASE) cin >> tt;
+    while(tt --) solve();
+    return 0;
+}
+//============================================================================================================================================
+/*
+https://www.matiji.net/exam/brushquestion/221/3181/1DC60EA6DF83A333301CFFE1407FBA59
+*/
+#include<bits/stdc++.h>
+using namespace std;
+
+#define endl '\n'
+#define int long long
+#define ull unsigned long long
+#define IOS ios::sync_with_stdio(false);cin.tie(NULL);cout.tie(NULL);
+#define HelloWorld IOS;
+
+using PII = pair<int, int>;
+#define fi first
+#define se second
+#define pb push_back
+#define sz(x) ((int)(x).size())
+#define all(x) (x).begin(), (x).end()
+const int inf = 3000000000000000000;
+const int rinf = -3000000000000000000;
+const bool HAVE_CASE = false;
+
+
+const int N = 100000 + 100;
+int prime[N], idx;
+bool vis[N];
+int phi[N];
+
+
+void get_phi(){
+    for(int i = 2; i < N; i ++){
+        if(!vis[i]){
+            prime[++ idx] = i;
+            phi[i] = i - 1; 
+        }
+        for(int j = 1; j <= idx && prime[j] <= N / i; j ++){
+            vis[i * prime[j]] = true;
+            if(i % prime[j] == 0){
+                phi[i * prime[j]] = phi[i] * prime[j];
+                break;
+            }
+            else phi[i * prime[j]] = phi[i] * (prime[j] - 1);
+        }
+    }
+}
+
+void solve(){
+    
+    int n; cin >> n;
+
+    int ans = 0;
+    for(int i = 1; i <= n; i ++) ans += phi[i];
+    cout << ans << endl;
+
+    return ;
+}
+
+signed main(){
+    HelloWorld;
+
+    get_phi();
+    int tt = 1; 
+    if(HAVE_CASE) cin >> tt;
+    while(tt --) solve();
+    return 0;
+}
+//============================================================================================================================================
+/*
+https://www.matiji.net/exam/brushquestion/222/3181/1DC60EA6DF83A333301CFFE1407FBA59
+*/
+const int mod = 1000000000 + 7;
+
+int ksm(int a, int b, int p){
+    int sum = 1;
+    a %= p;
+    while(b){
+        if(b & 1) sum = (sum * a) % p;
+        b >>= 1;
+        a = (a * a) % p;
+    }
+    return sum;
+}
+
+void solve(){
+    
+    int n; cin >> n;
+    cout << ksm((n % mod), mod - 2, mod) << endl;
+
+    return ;
+}
+//============================================================================================================================================
+/*
+https://www.matiji.net/exam/brushquestion/224/3181/1DC60EA6DF83A333301CFFE1407FBA59
+*/
+const int N = 1000 + 100;
+
+int l, n, m;
+
+vector<vector<int> > mul(vector<vector<int> > a, vector<vector<int> > b){
+    vector<vector<int> > c(l + 10, vector<int> (n + 10));
+    for(int i = 1; i <= l; i ++){
+        for(int k = 1; k <= m; k ++){
+            for(int j = 1; j <= n; j ++){
+                c[i][j] += a[i][k] * b[k][j];
+            }
+        }
+    }
+    return c;
+}
+
+void solve(){
+    
+    cin >> l >> m >> n;
+    vector<vector<int> > a(l + 10, vector<int> (m + 10));
+    vector<vector<int> > b(m + 10, vector<int> (n + 10));
+
+    for(int i = 1; i <= l; i ++){
+        for(int j = 1; j <= m; j ++) cin >> a[i][j];
+    }
+    for(int i = 1; i <= m; i ++){
+        for(int j = 1; j <= n; j ++) cin >> b[i][j];
+    }
+    vector<vector<int> > ans = mul(a, b);
+    for(int i = 1; i <= l; i ++){
+        for(int j = 1; j <= n; j ++) cout << ans[i][j] << " ";
+        cout << endl;
+    }
+    return ;
+}
+//============================================================================================================================================
+/*
+https://www.matiji.net/exam/brushquestion/225/3181/1DC60EA6DF83A333301CFFE1407FBA59
+*/
+const double p = 0.006;
+void solve(){
+    
+    int n; cin >> n;
+    if(n == 90){
+        cout << 100.000000 << "%" << endl;
+        return ;
+    }    
+
+    double ans = 0.0, p1 = 1.0;
+    for(int i = 1; i <= n; i ++){
+        ans += p1 * p;
+        p1 *= (1 - p);
+    }
+    cout << fixed << setprecision(6) << ans * 100 << "%" << endl;
+    return ;
+}
+//============================================================================================================================================
+/*
+https://www.matiji.net/exam/brushquestion/226/3181/1DC60EA6DF83A333301CFFE1407FBA59
+*/
+double ksm(double a, int b){
+    double sum = 1.0;
+    while(b){
+        if(b & 1) sum = (sum * a);
+        b >>= 1;
+        a = (a * a);
+    }
+    return sum;
+}
+
+void solve(){
+   
+    int n; cin >> n;
+    double ans = 0.0;
+    for(int i = 1; i <= n; i ++){
+        ans += (1.0 / i) * ksm(0.5, i);
+    }
+    cout << fixed << setprecision(6) << ans << endl;
+
+    return ;
+}
+//============================================================================================================================================
+/*
+https://www.matiji.net/exam/brushquestion/227/3181/1DC60EA6DF83A333301CFFE1407FBA59
+*/
+void solve(){
+    
+    int n, k, w; cin >> n >> k >> w;
+    int ans = 1;
+    for(int i = 3 * w; i >= 1; i --){
+        ans *= (k --);
+    }
+    cout << ans << endl;
+    return ;
+}
+//============================================================================================================================================
+/*
+https://www.matiji.net/exam/brushquestion/228/3181/1DC60EA6DF83A333301CFFE1407FBA59
+*/
+const int mod = 12520;
+const int N = 10000 + 100;
+
+int f[N][120];
+
+void solve(){
+    
+    
+    for(int i = 1; i <= 10000; i ++){
+        for(int j = 0; j <= min(i, 105LL); j ++){
+            if(j == 0 || j == i) f[i][j] = 1;
+            else f[i][j] = (f[i - 1][j - 1] + f[i - 1][j]) % mod;
+        }
+    }
+
+    int ans = 1;
+    int n, m; cin >> n >> m;
+    for(int i = 1; i <= m; i ++){
+        int x; cin >> x;
+        ans = (ans * f[n][x]) % mod;
+        n -= x;
+    }
+    cout << ans << endl;
+    return ;
+}
+//============================================================================================================================================
+/*
+https://www.matiji.net/exam/brushquestion/229/3181/1DC60EA6DF83A333301CFFE1407FBA59
+*/
+void solve(){
+    
+    int n; cin >> n;
+    n /= 2;
+    double ans = 1.0;
+    for(int i = 1; i <= n - 1; i ++){
+        ans *= (n - 1 + i) * 1.0 / 4.0 / i;
+    }
+    cout << fixed << setprecision(4) << 1.0 - ans << endl;
+    return ;
+}
+//============================================================================================================================================
+/*
+https://www.matiji.net/exam/brushquestion/236/3181/1DC60EA6DF83A333301CFFE1407FBA59
+*/
+const int N = 22;
+int n, m;
+int a[N];
+
+void dfs(int x, int num){
+    if(x == m + 1){
+        for(int i = 1; i <= m; i ++) cout << a[i] << " ";
+        cout << endl;
+        return ;
+    }
+    for(int i = num + 1; i <= n; i ++){
+        a[x] = i;
+        dfs(x + 1, i);
+    }
+}
+
+void solve(){
+    
+    cin >> n >> m;
+    dfs(1, 0);    
+    return ;
+}
+//============================================================================================================================================
+/*
+https://www.matiji.net/exam/brushquestion/237/3181/1DC60EA6DF83A333301CFFE1407FBA59
+*/
+int n, ans = 1000000000;
+
+void dfs(int cnt4, int cnt7, int num){
+    if(num > ans) return ;
+    if(cnt4 == cnt7 && num >= n) ans = min(ans, num);
+    dfs(cnt4 + 1, cnt7, num * 10 + 4);
+    dfs(cnt4, cnt7 + 1, num * 10 + 7);
+}
+
+void solve(){
+    
+    cin >> n;
+    dfs(0, 0, 0);   
+    cout << ans << endl; 
+    return ;
+}
+//============================================================================================================================================
+/*
+https://www.nowcoder.com/practice/6145e8596607442096f5ea5856acb6a1?channelPut=tracker2
+*/
+const int mod = 10000000 + 7;
+
+void solve(){
+    
+    int n; cin >> n;
+    priority_queue<int> q;
+    for(int i = 1; i <= n; i ++){
+        int x; cin >> x;
+        q.push(x);
+    }
+    int ans = 0;
+    while(q.size() > 1){
+        int x1 = q.top();
+        q.pop();
+        int x2 = q.top();
+        q.pop();
+        if(x1 + x2 < 0) break;
+        ans = (ans + (x1 + x2)) % mod;
+        q.push(x1 + x2);
+    }
+    cout << ans << endl;
+    return ;
+}
+//============================================================================================================================================
+/*
+https://www.matiji.net/exam/brushquestion/238/3181/1DC60EA6DF83A333301CFFE1407FBA59
+*/
+const int N = 1000 + 100;
+
+map<int, int> ma;
+void dfs(int u){
+    if(ma.count(u)) return;
+    ma[u] = 1;
+
+    for(int i = 1; i <= (u % 10) / 2; i ++){
+        dfs(u * 10 + i);
+    }
+}
+
+void solve(){
+    
+    int n; cin >> n;
+    int m = 0;
+    while(n){
+        m = m * 10 + (n % 10);
+        n /= 10;
+    }
+
+    dfs(m);    
+
+    cout << sz(ma) << endl;
+    return ;
+}
+//============================================================================================================================================
+/*
+https://www.matiji.net/exam/brushquestion/239/3181/1DC60EA6DF83A333301CFFE1407FBA59
+*/
+const int N = 110;
+int n, m;
+int a[N][N], max_len[N][N];
+
+int dx[] = {0, 0, 1, -1};
+int dy[] = {1, -1, 0, 0};
+
+void dfs(int x, int y){
+    max_len[x][y] = 1;
+    for(int i = 0; i < 4; i ++){
+        int nx = x + dx[i], ny = y + dy[i];
+        if(nx < 1 || nx > n || ny < 1 || ny > m) continue;
+        if(a[x][y] <= a[nx][ny]) continue;
+        if(max_len[nx][ny]) max_len[x][y] = max(max_len[x][y], max_len[nx][ny] + 1);
+        else{
+            dfs(nx, ny);
+            max_len[x][y] = max(max_len[x][y], max_len[nx][ny] + 1);
+        }
+    }
+}
+void solve(){
+    
+    cin >> n >> m;
+    for(int i = 1; i <= n; i ++){
+        for(int j = 1; j <= m; j ++) cin >> a[i][j];
+    }    
+    for(int i = 1; i <= n; i ++){
+        for(int j = 1; j <= m; j ++){
+            if(!max_len[i][j]) dfs(i, j);
+        }
+    }
+    
+    int ans = 1;
+    for(int i = 1; i <= n; i ++){
+        for(int j = 1; j <= m; j ++) ans = max(ans, max_len[i][j]);
+    }
+    cout << ans << endl;
+    return ;
+}
+//============================================================================================================================================
