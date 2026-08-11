@@ -1,0 +1,282 @@
+//============================================================================================================================================
+/*
+https://codeforces.com/contest/2230/problem/A
+*/
+void solve(){
+    
+    int n, a, b; cin >> n >> a >> b;
+    if(b <= 3 * a){
+        int ans = 0;
+        ans += (n / 3) * b;
+        n %= 3;
+        if(n == 1){
+            if(b <= a) ans += b;
+            else ans += a;
+        }
+        if(n == 2){
+            if(b <= 2 * a) ans += b;
+            else ans += 2 * a;
+        }
+        cout << ans << endl;
+    }
+    else cout << n * a << endl;
+    return ;
+}
+//============================================================================================================================================
+/*
+https://codeforces.com/contest/2254/problem/G
+*/
+const int N = 200000 + 100;
+int n, a[N];
+
+void solve(){
+    
+    cin >> n;
+    for(int i = 1; i <= n; i ++) cin >> a[i];
+    vector<min_queue<int> > q(n + 10);
+    vector<int> extra;
+    
+    vector<vector<int> > adj(n + 10);
+    for(int i = 2; i <= n; i ++){
+        int fa; cin >> fa;
+        adj[fa].pb(i);
+    }
+
+    for(int u = n; u >= 1; u --){
+        if(!sz(adj[u])){
+            q[u].push(a[u]);
+        }
+        else{
+            int idx = adj[u][0];
+            for(int v : adj[u]){
+                if(sz(q[v]) > sz(q[idx])) idx = v;
+            }
+            swap(q[u], q[idx]);
+
+            for(int v : adj[u]){
+                if(v == idx) continue;
+
+                while(sz(q[v])){
+                    q[u].push(q[v].top());
+                    q[v].pop();
+                }
+
+                min_queue<int>().swap(q[v]);
+            }
+
+            int x = q[u].top();
+            q[u].pop();
+            q[u].push(max(x, a[u]));
+            if(a[u] <= x) extra.pb(a[u]);
+            else extra.pb(x);
+        }
+    }
+
+    int leaves = sz(q[1]);
+
+    long long ans = 0;
+    while(sz(q[1])){
+        ans += q[1].top();
+        q[1].pop();
+    }
+
+    sort(all(extra));
+    for(int i = 1; i <= n; i ++){
+        if(i < leaves) cout << -1 << " ";
+        else{
+            cout << ans << " ";
+            if(i < n) ans += extra.back();
+            if(i < n) extra.pop_back();
+        }
+    }
+    cout << endl;
+    return ;
+}
+//============================================================================================================================================
+/*
+https://codeforces.com/contest/2230/problem/B
+*/
+void solve(){
+    
+    string s; cin >> s;
+    int n = sz(s);
+    s = " " + s;
+    int ans = 0;
+    vector<int> pre1(n + 10), pre3(n + 10);
+    for(int i = 1; i <= n; i ++){
+        pre1[i] = pre1[i - 1];
+        pre3[i] = pre3[i - 1];
+        if(s[i] == '1' || s[i] == '3') pre1[i] ++;
+        if(s[i] == '2') pre3[i] ++;
+        if(s[i] == '4') ans ++;
+    }
+    int min_num = inf;
+    for(int i = 0; i <= n; i ++){
+        min_num = min(min_num, pre1[i] + pre3[n] - pre3[i]);
+    }
+    // for(int i = 1; i <= n; i ++) cout << pre1[i] << " ";
+    // cout << endl;
+    // for(int i = 1; i <= n; i ++) cout << pre3[i] << " ";
+    // cout << endl;
+
+    cout << ans + min_num << endl;
+    
+    return ;
+}
+//============================================================================================================================================
+/*
+https://codeforces.com/gym/104887/problem/C
+*/
+void solve(){
+    
+    int r, c, m, k; cin >> r >> c >> m >> k;
+    vector<vector<int> > vis(r + 10, vector<int> (c + 10));
+    
+    if(m < k || k > min(r, c)){
+        cout << "NO" << endl;
+        return ;
+    }
+
+    for(int i = 1; i <= k; i ++){
+        vis[i][i] = 1;
+        m --;
+    }
+
+    for(int i = 1; i <= k; i ++){
+        for(int j = 1; j <= k; j ++){
+            if(vis[i][j]) continue;
+            if(!m) break;
+            vis[i][j] = 1;
+            m --;
+        }
+        if(!m) break;
+    }
+    if(r <= c){
+        for(int i = 1; i <= k; i ++){
+            for(int j = 1; j <= c; j ++){
+                if(vis[i][j]) continue;
+                if(!m) break;
+                vis[i][j] = 1;
+                m --;
+            }
+            if(!m) break;
+        }
+    }
+    else{
+        for(int i = 1; i <= r; i ++){
+            for(int j = 1; j <= k; j ++){
+                if(vis[i][j]) continue;
+                if(!m) break;
+                vis[i][j] = 1;
+                m --;
+            }
+            if(!m) break;
+        }
+    }
+
+    if(m){
+        cout << "NO" << endl;
+        return ;
+    }
+    cout << "YES" << endl;
+    for(int i = 1; i <= r; i ++){
+        for(int j = 1; j <= c; j ++){
+            if(vis[i][j]) cout << "#";
+            else cout << ".";
+        }
+        cout << endl;
+    }
+
+    return ;
+}
+//============================================================================================================================================
+/*
+https://codeforces.com/contest/2230/problem/D
+显然如果[L, R]是合法的线段，那么区间[L, R - 1]也是合法的线段，故需要找到每个L最大值R即可
+
+首先对于每一个位置[1, n]来说其中一个位置举例为L, 容易想到他们观看第一集的日子(设为第x天与第y天)，那么如果x不等于y，显然此时R = min(x, y) - 1
+如果x和y相等，那么就去想他们观看第二集的日子(依旧设为x, y)如果x不等于y，那么此时R = min(x, y) - 1
+就这么一直进行下去......直到要么x != y要么后面没有下一集了就停止了
+
+那么如果解决上面的问题了，使用了动态规划的方法
+从n向前到1遍历，pa[i]表示当前位置从左向右a[i]第一次出现的位置，如果不存在则默认为n + 1，pb[i]同理
+显然需要一边更新pa[i], pb[i]一边计算贡献
+dp[i]表示的是一i为L区间的左端点能够达到最远的区间右端点R的值
+对于现在如果a[i] == b[i]，那么
+*/ 
+void solve(){
+    
+    int n; cin >> n;
+    vector<int> a(n + 10), b(n + 10);
+    for(int i = 1; i <= n; i ++) cin >> a[i];
+    for(int i = 1; i <= n; i ++) cin >> b[i];
+    vector<int> pa(n + 10, n + 1), pb(n + 10, n + 1);
+    vector<int> dp(n + 10, n + 1);
+
+    int ans = 0;
+    for(int i = n; i >= 1; i --){
+        pa[a[i]] = i;
+        pb[b[i]] = i;
+
+        /*
+        更新dp[i]
+        如果这一天爱丽丝和鲍勃播放的是同一集，那么就去看后面第a[i] + 1集的情况
+        如果爱丽丝和鲍勃播放第a[i] + 1集仍然在同一天，那么就可以更新dp[i] = dp[p[a]];
+        否则说明播放的不是在同一天，那么dp[u] = min(pa[x], pb[x]) - 1;
+        所以pa[]和pb[]数组是一边更新一边计算答案的，不能是先将pa,pb更新完后再来计算答案
+
+        如果这一天爱丽丝和鲍勃播放的不是同一集，那么就去看第1集的情况
+        */       
+        if(a[i] == b[i]){
+            int x = a[i] + 1;
+            if(pa[x] == pb[x]) dp[i] = dp[pa[x]];
+            else dp[i] = min(pa[x], pb[x]);
+        }
+        /*
+        dp[i]表示的是这一天匹配了第a[i]集，区间能够延申的最远区间有边界R
+        所以只与匹配的a[i] == b[i]有关系！
+        */
+        // else{
+        //     if(pa[1] == pb[1]) dp[i] = dp[pa[1]];
+        //     else dp[i] = min(pa[1], pb[1]) - 1;
+        // }
+
+        /*
+        对于枚举的i来说充当为区间的左边界，寻找最远的有边界R，都需要从1开始判断！！
+        */
+        if(pa[1] == pb[1]) ans += dp[pa[1]] - i;
+        else ans += min(pa[1], pb[1]) - i;
+    }
+
+    cout << ans << endl;
+    return ;
+}
+//============================================================================================================================================
+/*
+https://codeforces.com/contest/2230/problem/E
+
+1，影响力函数是一个非递减的分段函数----低于容忍度时为0，在容忍度内线性增长，超出后饱和
+    那么现在对于(p1, c1)和(p2, c2)来说，如果满足(p1 <= p2 && c1 <= c2)那么对于这个人的代价对于第(p1, c1)这条新闻一定不大于(p2, c2)这条新闻
+2，总影响力 = 政治影响 + 文化影响，两者独立可以分别计算
+
+
+帕累托前沿：由上面的第一条性质，比如现在两条新闻的p和c分别为(3, 5)和(4, 7)，那么对任意的用户来说(3, 5)的影响力一定小于等于(4, 7)的影响力！
+    那么将两个维度上都比别人大的点直接舍去，只保留相互之间"你大我小，我小你大"的点
+    将剩下的点不妨按照p来排序，将p递增排序，那么p是严格递增的，同时c一定也是严格递减的！！！
+    例如这个样子：(0, 9), (1, 6), (2, 3), (3, 2), (6, 1), (10, 0)
+    那么分别考虑p和c上的影响，可以得知在p上面的影响一定是单调递增的，然后在c上面的影响一定是单调递减的，对于他们的总影响之和来说：一定是先递减然后递增的！！！
+    不妨这么想：对于最左边来说p很小c很大，导致总和被c拖累，总和很大；对于最右边来说p很大c很小，导致总和被p拖累，总和很大；
+    在中间某个位置p和c都不大也不小，使得最后的总和最小！
+
+    题目中给定的影响函数，函数的斜率只会在四个位置放生变化：p = tp，p = tp + p，c = tc， c = tc + c，而在这些位置之间总影响的函数的斜率要么为0要么为1，所以为
+    一条直线，而一条直线的最小值一定在两个端点之间，所以只需要枚举边界端点即可，不需要将所有的n个点一一枚举
+    例如tp = 1, tc = 5, d = 2来说
+    在p = tp = 1附近的点有(0, 9), (1, 6)
+    在p = tp + d = 3附近的点有(2, 3), (4, 2)
+    在c = tc = 5附近的点有(1, 6), (2, 3)
+    在c = tc + d = 7附近的点有(0, 9), (10, 0)
+    去重后候选点有(0, 9), (1, 6), (2, 3), (4, 2), (10, 0)
+    然后逐个计算最小值即可
+
+*/
+//============================================================================================================================================
