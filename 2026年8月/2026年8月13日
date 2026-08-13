@@ -1,0 +1,781 @@
+//============================================================================================================================================
+/*
+https://atcoder.jp/contests/typical90/tasks/typical90_u
+*/
+
+const int N = 100000 + 100;
+
+int n, m;
+vector<int> adj[N];
+int dfn[N], low[N];
+int dfn_cnt, scc_cnt;
+stack<int> sta;
+bool in_stack[N];
+int scc_id[N];
+
+map<PII, int> ma;
+
+
+void tarjan(int u){
+    dfn[u] = low[u] = ++ dfn_cnt;
+    sta.push(u);
+    in_stack[u] = true;
+
+    for(int v : adj[u]){
+        if(!dfn[v]){
+            tarjan(v);
+            low[u] = min(low[u], low[v]);
+        }
+        else if(in_stack[v]){
+            low[u] = min(low[u], dfn[v]);
+        }
+    }
+
+    if(dfn[u] == low[u]){
+        int v = 0;
+        scc_cnt ++;
+        while(u != v){
+            v = sta.top();
+            sta.pop();
+            scc_id[v] = scc_cnt;
+            in_stack[v] = false;
+        }
+    }
+}
+
+void solve(){
+    
+    cin >> n >> m;
+    for(int i = 1; i <= m; i ++){
+        int u, v; cin >> u >> v;
+        if(ma.count({u, v})) continue;
+        ma[{u, v}] = 1;
+
+        adj[u].pb(v);
+    }
+    
+    for(int i = 1; i <= n; i ++){
+        if(!dfn[i]) tarjan(i);
+    }
+
+    vector<int> cnt(scc_cnt + 10);
+    for(int i = 1; i <= n; i ++){
+        cnt[scc_id[i]] ++;
+    }
+
+    int ans = 0;
+    for(int i = 1; i <= scc_cnt; i ++){
+        int sum = (cnt[i] - 1) * cnt[i] / 2;
+        ans += sum;
+    }
+    
+    cout << ans << endl;
+    return ;
+}
+//============================================================================================================================================
+/*
+https://atcoder.jp/contests/typical90/tasks/typical90_w
+*/
+
+const int mod = 1000000000 + 7;
+
+void solve(){
+    /*
+    状态压缩DP，以行为阶段，使用二进制数mask表示某一行的放置方案(1表示放国王，0表示不放)
+    定义dp[i][mask]表示处理完第i行，且第i行的状态为mask 的方案数
+    初始化：dp[0][0] = 1(第0行看作空状态)
+    优化：如果w > h，可以将网格转置，保证w <= h，不仅减少空间消耗并且减少枚举的状态，缩小时间！
+
+    1，首先，预处理出所有行内合法的状态，即mask内不用有相邻的1。同时每个状态必须符合该行白字格子的限制
+    2，然后对于相邻两行，需要检查它们之间是否兼容：即同一列不能同时为1(上下攻击), 且错开一列也不能同时为1()斜对角攻击
+    */
+        
+    int n, m; cin >> n >> m;
+    vector<vector<char> > a(n + 10, vector<char> (m + 10));
+    for(int i = 1; i <= n; i ++){
+        for(int j = 1; j <= m; j ++) cin >> a[i][j];
+    }
+
+    if(m > n){
+        vector<vector<char> > b(m + 10, vector<char> (n + 10));
+        
+        for(int i = 1; i <= n; i ++){
+            for(int j = 1; j <= m; j ++){
+                b[j][i] = a[i][j];
+            }
+        }
+        swap(n, m);
+        a = b;
+    }
+
+    /*
+    这一步预处理出一行中所有的合法状态，就是一行内不能存在相邻的1
+    即(mask & (mask << 1)) == 0
+    当n和m都最大为24时，state中元素的个数最多为121393个
+    */
+    vector<int> state;
+    for(int mask = 0; mask < (1LL << m); mask ++){
+        if((mask & (mask << 1)) == 0){
+            state.pb(mask);
+        }
+    }
+
+    /*
+    为了快速从掩码值获取其索引，建立映射数组，大小为1LL << m
+    */
+    int size_state = sz(state);
+    vector<int> mask_to_idx(1LL << m, -1);
+    for(int i = 0; i < size_state; i ++){
+        mask_to_idx[state[i]] = i;
+    }
+    
+    vector<vector<int> > nex_state(size_state + 10);
+
+    int total_state = (1LL << m) - 1;
+    for(int i = 0; i < size_state; i ++){
+        int mask = state[i];
+
+        /*
+        如果当前这一行的状态是mask，那么下一列的状态不能是 与maks, mask << 1, mask >> 1存在相同位置1的状态
+        所以mask | (mask << 1) | (mask >> 1)是求出下一列与mask不合法的状态
+        然后对(mask | (maks << 1) | (mask >> 1)按位取反，求出下一行中可以放置国王的合法位置
+        但是按位取反会把多余的0变为1，所以还需要与(1LL << m) - 1 按位与操作
+        */
+        int safe = total_state & ~(mask | (mask << 1) | (mask >> 1));
+       
+        /*
+        求safe的子集(模板)
+        */
+        int sub = safe;
+        while(1){
+            if((sub & (sub << 1)) == 0){
+                int j = mask_to_idx[sub];
+                nex_state[i].pb(j);
+            }
+            if(sub == 0) break;
+            sub = (sub - 1) & safe; 
+        }
+    }
+
+    /*
+    allow表示的是每一行除去#位置可以放置的合法位置，因为只有.可以放置国王
+    */
+    vector<int> allow(n + 10, 0);
+    for(int i = 1; i <= n; i ++){
+        int now_mask = 0;
+        for(int j = 1; j <= m; j ++){
+            if(a[i][j] == '.') now_mask |= (1LL << (j - 1));
+        }
+        allow[i] = now_mask;
+    }
+
+    /*
+    滚动优化空间
+    */
+    vector<int> dp(size_state, 0), pre_dp(size_state, 0);
+    dp[mask_to_idx[0]] = 1;
+
+    for(int i = 1; i <= n; i ++){
+        fill(all(pre_dp), 0);
+        for(int j = 0; j < size_state; j ++){
+            int mask = state[j];
+            if((mask & ~allow[i]) != 0) continue;
+
+            int sum = 0;
+            for(int nex_mask : nex_state[j]){
+                sum = (sum + dp[nex_mask]) % mod;
+            }
+            pre_dp[j] = sum;
+        }
+        swap(dp, pre_dp);
+    }
+    for(int i = 1)
+
+    int ans = 0;
+    for(int i = 0; i < size_state; i ++){
+        int mask = state[i];
+        if((mask & ~allow[n]) == 0) ans = (ans + dp[i]) % mod;
+    }
+    cout << ans << endl;
+    return ;
+}
+//============================================================================================================================================
+/*
+https://atcoder.jp/contests/typical90/tasks/typical90_x
+*/
+
+void solve(){
+    
+    int n, m; cin >> n >> m;
+    vector<int> a(n + 10), b(n + 10);
+    for(int i = 1; i <= n; i ++) cin >> a[i];
+    for(int i = 1; i <= n; i ++) cin >> b[i];
+
+    int sum = 0;
+    for(int i = 1; i <= n; i ++){
+        sum += abs(a[i] - b[i]);
+    }
+
+    if(sum > m || ((m - sum) & 1)) cout << "No" << endl;
+    else cout << "Yes" << endl;
+    return ;
+}
+//============================================================================================================================================
+/*
+https://atcoder.jp/contests/typical90/tasks/typical90_y
+*/
+
+
+vector<int> total_num;
+
+void dfs(int num, int x, int mul){
+    total_num.pb(mul);
+    if(x == 11) return ;
+    for(int i = num; i <= 9; i ++){
+        dfs(i, x + 1, mul * i);
+    }
+}
+
+void solve(){
+    /*
+    数据范围最大是10的11次方，也就是说十进制位的长度最大是12，所以我一开始就是想到了搜索dfs处理
+    但是一共有12位，每一位有0到9一共10种选择，所以一共有10的12次方种，肯定超时！
+
+    m - f(m) = B
+    所以放弃枚举m，但是可考虑f(m)的值，f(m)就是各个数位的乘积
+    先不考虑0和1，因为如果数位上存在0，那么f(m) = 0
+    如果数位上存在1，无影响 
+
+    这里就是区别：如果我去枚举m，那么每一位上都需要去确定是哪一个具体的数字，但是对于f(m)这个乘积来说
+    1 × 2 × 3 = 6， 2 × 3 × 1 = 6，即不同的排列但是有相同的乘积，所以枚举其中的组合情况即可
+    在dfs中，从小到大枚举，比如现在枚举的a[x] = 5, 那么a[x + 1] 一定 大于等于5，不会小于5，这样将枚举排列转化位了枚举组合情况
+    对于式子m = f(m) + B, 多个不同的m值可能的数位乘积对应相同的f(m), 所以只需要去搜索f(m)就可以了
+    如果f(m)确定了，那么f(m) + B的值就确定了!
+
+    f(m)的可能取值数量非常有限，从而避免了遍历巨大的m范围
+    首先dfs搜索出所有可能的f(m), 然后m = B + f(m), 检查m是否在[1, N]范围内即可
+    */
+    int N, B; cin >> N >> B;
+
+    dfs(2, 0, 1);
+    set<int> see;
+
+    /*
+    将乘积为0的情况放入total_num中
+    */
+    total_num.pb(0);
+    for(int num : total_num){
+        int m = num + B;
+
+        int temp = m, dig_num = 1;
+        while(temp){
+            dig_num = dig_num * (temp % 10);
+            temp /= 10;
+        }
+
+        // 验证当前m的数位乘积等不等于num
+
+        if(dig_num != num) continue;
+        if(1 <= m && m <= N) see.insert(m);
+    }
+
+    cout << sz(see) << endl;
+    return ;
+}
+//============================================================================================================================================
+/*
+https://atcoder.jp/contests/typical90/tasks/typical90_z
+*/
+
+const int N = 100000 + 100;
+
+int n;
+vector<int> adj[N];
+int color[N];
+
+void dfs(int u, int fa){
+    for(int v : adj[u]){
+        if(color[v] == -1){
+            color[v] = color[u] ^ 1;
+            dfs(v, u);
+        }
+    }
+}
+void solve(){
+    
+    cin >> n;
+    fill(color + 1, color + 1 + n, -1);
+    for(int i = 1; i <= n - 1; i ++){
+        int u, v; cin >> u >> v;
+        adj[u].pb(v);
+        adj[v].pb(u);
+    }    
+
+    color[1] = 1;
+    dfs(1, - 1);
+
+    vector<int> res0, res1;
+    for(int i = 1; i <= n; i ++){
+        if(color[i]) res1.pb(i);
+        else res0.pb(i);
+    }
+    if(sz(res0) > n / 2){
+        for(int i = 0; i < n / 2; i ++) cout << res0[i] << " ";
+    }
+    else{
+        for(int i = 0; i < n / 2; i ++) cout << res1[i] << " ";
+    }
+    cout << endl;
+    return ;
+}
+//============================================================================================================================================
+/*
+https://atcoder.jp/contests/typical90/tasks/typical90_aa
+*/
+
+void solve(){
+    
+    int n; cin >> n;
+    map<string, int> ma;
+
+    for(int i = 1; i <= n; i ++){
+        string s; cin >> s;
+        if(ma.count(s)) continue;
+        cout << i << endl;
+        ma[s] = 1;
+    }
+    return ;
+}
+//============================================================================================================================================
+/*
+https://atcoder.jp/contests/typical90/tasks/typical90_ab
+*/
+
+const int N = 1000 + 10;
+int a[N][N];
+void solve(){
+    
+    int n; cin >> n;
+
+    for(int i = 1; i <= n; i ++){
+        int x1, y1, x2, y2; cin >> x1 >> y1 >> x2 >> y2;
+        x1 ++, y1 ++;
+        
+        a[x2][y2] ++;
+        a[x2][y1 - 1] --;
+        a[x1 - 1][y2] --;
+        a[x1 - 1][y1 - 1] ++;
+    }
+
+    for(int i = 1; i <= 1000; i ++){
+        for(int j = 1; j <= 1000; j ++){
+            a[i][j] = a[i][j] + a[i - 1][j] + a[i][j - 1] - a[i - 1][j - 1];
+        }
+    }
+
+    vector<int> ans(n + 10);
+    for(int i = 1; i <= 1000; i ++){
+        for(int j = 1; j <= 1000; j ++){
+            if(a[i][j]) ans[a[i][j]] ++;
+        }
+    }
+    for(int i = 1; i <= n; i ++) cout << ans[i] << endl;
+    return ;
+}
+//============================================================================================================================================
+/*
+https://atcoder.jp/contests/typical90/tasks/typical90_ac
+*/
+
+const int N = 500000 + 100;
+
+struct Node{
+    int l, r;
+    int sum, flag;
+}tr[4 * N];
+
+
+void push_down(int u){
+    if(tr[u].flag){
+        int flag = tr[u].flag;
+        tr[u << 1].sum = flag;
+        tr[u << 1].flag = flag;
+        tr[u << 1 | 1].sum = flag;
+        tr[u << 1 | 1].flag = flag;
+        tr[u].flag = 0;
+    }
+}
+
+void push_up(int u){
+    tr[u].sum = max(tr[u << 1].sum, (tr[u << 1 | 1].sum));
+}
+
+void build(int u, int l, int r){
+    if(l == r){
+        tr[u] = {l, r, 0, 0};
+        return ;
+    }
+    else{
+        tr[u] = {l, r, 0, 0};
+        int mid = (tr[u].l + tr[u].r) >> 1;
+        build(u << 1, l, mid);
+        build(u << 1 | 1, mid + 1, r);
+    }
+}
+
+int query(int u, int l, int r){
+    if(l <= tr[u].l && tr[u].r <= r) return tr[u].sum;
+    else{
+        push_down(u);
+        int res = 0;
+        int mid = (tr[u].l + tr[u].r) >> 1;
+        if(l <= mid) res = max(res, query(u << 1, l, r));
+        if(r > mid) res = max(res, query(u << 1 | 1, l, r));
+        return res;
+    }
+}
+
+void modify(int u, int l, int r, int x){
+    if(l <= tr[u].l && tr[u].r <= r){
+        tr[u].sum = x;
+        tr[u].flag = x;
+        return ;
+    }
+    else{
+        push_down(u);
+        int mid = (tr[u].l + tr[u].r) >> 1;
+        if(l <= mid) modify(u << 1, l, r, x);
+        if(r > mid) modify(u << 1 | 1, l, r, x);
+        push_up(u);
+    }
+}
+
+void solve(){
+    
+    int n, m; cin >> n >> m;
+
+    build(1, 1, n);
+
+    for(int i = 1; i <= m; i ++){
+        int l, r; cin >> l >> r;
+        int max_num = query(1, l, r) + 1;
+        cout << max_num << endl;
+        modify(1, l, r, max_num);
+    }
+    return ;
+}
+//============================================================================================================================================
+/*
+https://vjudge.net/problem/AtCoder-typical90_ad
+*/
+
+#include<bits/stdc++.h>
+using namespace std;
+
+#define endl '\n'
+#define int long long
+#define ull unsigned long long
+#define IOS ios::sync_with_stdio(false);cin.tie(NULL);cout.tie(NULL);
+#define HelloWorld IOS;
+
+using PII = pair<int, int>;
+#define fi first
+#define se second
+#define pb push_back
+#define sz(x) ((int)(x).size())
+#define all(x) (x).begin(), (x).end()
+#define alll(x, n) (x).begin() + 1, (x).begin() + 1 + n
+template<typename T> using max_queue = priority_queue<T>;
+template<typename T> using min_queue = priority_queue<T, vector<T>, greater<T>>;
+const double eps = 1e-9;
+const double pi = acos(-1.0);
+const int inf = 3000000000000000000;
+const int rinf = -3000000000000000000;
+const bool HAVE_CASE = false;
+
+
+
+const int N = 10000000 + 10;
+const int M = 1000000;
+
+int prime[N], idx;
+bool vis[N];
+
+void init(){
+    for(int i = 2; i < N; i ++){
+        if(!vis[i]) prime[++ idx] = i;
+        for(int j = 1; j <= idx && prime[j] <= N / i; j ++){
+            vis[prime[j] * i] = true;
+            if(i % prime[j] == 0) break;
+        }
+    }
+}
+
+int cnt[N];
+void solve(){
+    
+    int n, k; cin >> n >> k;
+    for(int i = 1; i <= idx && prime[i] <= n; i ++){
+        for(int j = prime[i]; j <= n; j += prime[i]){
+            cnt[j] ++;
+        }
+    }
+
+    int ans = 0;
+    for(int i = 1; i <= n; i ++){
+        if(cnt[i] >= k) ans ++;
+    }
+    cout << ans << endl;
+    return ;
+}
+
+signed main(){
+    HelloWorld;
+
+    init();
+    int tt = 1; 
+    if(HAVE_CASE) cin >> tt;
+    while(tt --) solve();
+    return 0;
+}
+//============================================================================================================================================
+/*
+https://atcoder.jp/contests/typical90/tasks/typical90_ae
+*/
+
+int SG[55][2000];
+
+int sg(int w, int b){
+    if(w == 0 && b <= 1) return 0;
+
+    if(SG[w][b] != -1) return SG[w][b];
+
+    // 使用set来保存所以的下一步的可能值，求mex
+    set<int> see;
+    
+    // 操作A: 拿走一颗白石 ----> (w - 1, b + w)
+    if(w >= 1) see.insert(sg(w - 1, b + w));
+
+    // 操作B：选取一个k∈[1, b / 2] ----> (w, b - k)
+    for(int i =  1; i <= b / 2; i ++){
+        see.insert(sg(w, b - i));
+    }
+
+    int mex = 0;
+    while(see.count(mex)) mex ++;
+
+    SG[w][b] = mex;
+    return mex;
+}
+
+void solve(){
+    /*
+    操作A:(仅 w >= 1 可以使用)
+        拿走1颗白石，额外增加w颗青石，新状态:(w - 1, b + w)
+    操作B:(仅 b >= 2 可以使用)
+        选整数k∈[1, b / 2], 拿走k颗青石，新状态:(w, b - k)
+    */
+    
+    /*
+    公平组合游戏拆分：每一堆是独立子游戏，总游戏Grundy值 = 所有堆Grundy值的异或
+    SG定理：多个独立子游戏，吧每一堆的sg值全部异或起来：
+        总异或值不等于0，那么先手必胜
+        总异或值等于0，那么后手必胜
+
+    Grundy(SG)函数定义：
+        终态(w = 0, b <= 1): sg[w][b] = 0
+        普通状态：收集所有一步可达后继状态的sg值几何，sg = mex(集合) (最小未出现非负整数)
+    预处理范围：w <= 50, 操作A会让青石大幅上涨，但w上限仅为50，可以预先达标sg[w][b]
+    */
+
+    memset(SG, -1, sizeof(SG));
+    int n; cin >> n;
+    vector<int> W(n), B(n);
+
+    for(int i = 0; i < n; i ++) cin >> W[i];
+    for(int i = 0; i < n; i ++) cin >> B[i];
+
+    int xor_sum = 0;
+    for(int i = 0; i < n; i ++){
+        xor_sum = xor_sum ^ sg(W[i], B[i]);
+    }
+
+    if(!xor_sum) cout << "Second" << endl;
+    else cout << "First" << endl;
+    return ;
+}
+//============================================================================================================================================
+/*
+https://atcoder.jp/contests/typical90/tasks/typical90_af
+*/
+
+const int N = 20;
+int n, m;
+
+int a[N][N];
+map<PII, int> ma;
+
+
+int b[N], vis[N];
+int min_time = inf;
+
+void dfs(int x){
+    
+    if(x == n + 1){
+        for(int i = 1; i <= n - 1; i ++){
+            int u = b[i], v = b[i + 1];
+            if(u > v) swap(u, v);
+            if(ma.count({u, v})) return ;
+        }
+        int now_time = 0;
+        for(int i = 1; i <= n; i ++){
+            now_time += a[b[i]][i];
+        }
+        min_time = min(min_time, now_time);
+        return ;
+    }
+    for(int i = 1; i <= n; i ++){
+        if(!vis[i]){
+            vis[i] = 1;
+            b[x] = i;
+            dfs(x + 1);
+            vis[i] = 0;
+        }
+    }
+}
+
+void solve(){
+    
+    cin >> n;
+    for(int i = 1; i <= n; i ++){
+        for(int j = 1; j <= n; j ++) cin >> a[i][j];
+    }
+    
+    cin >> m;
+    for(int i = 1; i <= m; i ++){
+        int u, v; cin >> u >> v;
+        if(u > v) swap(u, v);
+        ma[{u, v}] = 1;
+    }
+
+    dfs(1);
+
+    if(min_time == inf) cout << "-1" << endl;
+    else cout << min_time << endl;
+    return ;
+}
+//============================================================================================================================================
+/*
+https://atcoder.jp/contests/typical90/tasks/typical90_ag
+*/
+
+int dx[] = {-1, -1, -1, 0, 0, 1, 1, 1};
+int dy[] = {-1, 0, 1, -1, 1, -1, 0, 1};
+
+void solve(){
+    
+    int n, m; cin >> n >> m;
+    if(n == 1 || m == 1){
+        cout << n * m << endl;
+        return ;
+    }
+     
+    vector<vector<int> > a(n + 10, vector<int> (m + 10));
+    for(int i = 1; i <= n; i ++){
+        for(int j = 1; j <= m; j ++) cin >> a[i][j];
+    } 
+
+    int ans = 0;
+    for(int i = 1; i <= n; i ++){
+        for(int j = 1; j <= m; j ++){
+
+            int cnt = 0;
+
+            for(int k = 0; k < 8; k ++){
+                int x = i + dx[k], y = j + dy[k];
+                if(1 <= x && x <= n && 1 <= y && y <= m){
+                    if(a[x][y] == 1) cnt ++;
+                }
+            }
+            if(cnt) continue;
+
+            ans ++;
+            a[i][j] = 1;
+        }
+    }
+    cout << ans << endl;
+
+    // cout << ((n + 1) / 2) * ((m + 1) / 2) << endl;
+    return ;
+}
+//============================================================================================================================================
+/*
+https://atcoder.jp/contests/typical90/tasks/typical90_ah
+*/
+
+void solve(){
+    
+    int n, m; cin >> n >> m;
+    map<int, int> ma;
+    vector<int> a(n + 10);
+
+    for(int i = 1; i <= n; i ++) cin >> a[i];
+
+    int right = 0;
+    int cnt = 0;
+    int max_len = 0;
+    for(int left = 1; left <= n; left ++){
+        while(right + 1 <= n && cnt <= m){
+            if(ma[a[right + 1]] == 0) cnt ++;
+            ma[a[right + 1]] ++;
+            right ++;
+        }
+        while(cnt > m){
+            if(ma[a[right]] == 1) cnt --;
+            ma[a[right]] --;
+            right --;
+        }
+        // cout << left << " " << right << endl;
+        max_len = max(max_len, right - left + 1);
+        if(ma[a[left]] == 1) cnt --;
+        ma[a[left]] --;
+    }
+
+    cout << max_len << endl;
+    return ;
+}
+//============================================================================================================================================
+/*
+https://atcoder.jp/contests/abc470/tasks/abc470_a
+*/
+
+void solve(){
+    
+    int n; cin >> n;
+    for(int i = 1; i <= n; i ++){
+        if(i % 3) cout << i << endl;
+        else cout << "Fizz" << endl;
+    }
+    return ;
+}
+//============================================================================================================================================
+/*
+https://atcoder.jp/contests/abc470/tasks/abc470_b
+*/
+
+void solve(){
+    
+    int n; cin >> n;
+    vector<int> cnt(n + 10);
+
+    int max_cnt = 0;
+    for(int i = 1; i <= n; i ++){
+        int x; cin >> x;
+        cnt[x] ++;
+        max_cnt = max(max_cnt, cnt[x]);
+    }
+
+    cout << n - max_cnt << endl;
+    return ;
+}
+//============================================================================================================================================
