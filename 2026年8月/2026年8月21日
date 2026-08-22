@@ -1,0 +1,314 @@
+//============================================================================================================================================
+/*
+https://ac.nowcoder.com/acm/problem/253617
+*/
+
+const int mod = 998244353;
+
+void solve(){
+    
+    int n; cin >> n;
+    vector<int> a(n + 10);
+    for(int i = 1; i <= n; i ++) cin >> a[i];
+
+    int x = 0;
+
+    bool ok = true;
+    for(int i = 1; i <= n; i ++){
+
+        if(i == 1){
+            if(a[i] >= 2) ok = false;
+            x = (x + a[i]) % mod;
+        }
+        else{
+            if(a[i] != 0){
+                if(a[i] == 1){
+                    if(x >= 1) ok = false;
+                    x = (x + a[i]) % mod;
+                }
+                else{
+                    if(x == 0){
+                        if(ok) x = (x + a[i]) % mod;
+                        else{
+                            if(a[i] >= 2) ok = false;
+                            x = (x * a[i]) % mod;
+                        }
+                    }
+                    else if(x == 1){
+                        if(ok) x = (x + a[i]) % mod;
+                        else x = (x * a[i]) % mod;
+                        ok = false;
+                    }
+                    else{
+                        x = (x * a[i]) % mod;
+                        ok = false;
+                    }
+                }
+            }
+        }
+    }
+    cout << x << endl;
+    return ;
+}
+
+//============================================================================================================================================
+/*
+https://ac.nowcoder.com/acm/problem/288209
+*/
+
+const int N = 3000 + 100;
+const int mod = 1000000000 + 7;
+
+int f[N][N];
+
+int ksm(int a, int b, int p){
+    int sum = 1;
+    while(b){
+        if(b & 1) sum = (sum * a) % p;
+        b >>= 1;
+        a = (a * a) % p;
+    }
+    return sum;
+}
+
+int inv(int x){
+    return ksm(x, mod - 2, mod);
+}
+
+void solve(){
+    
+    int x, a1, b1, a2, b2; cin >> x >> a1 >> b1 >> a2 >> b2;
+
+    int p1 = a1 * inv(b1) % mod;
+    int q1 = (1 - p1 + mod) % mod;
+    int p2 = a2 * inv(b2) % mod;
+    int q2 = (1 - p2 + mod) % mod;
+
+    int denom = (1 - q1 * q2 % mod + mod) % mod;
+    int inv_denom = inv(denom);
+
+    for(int i = 0; i <= x - 1; i ++) f[i][x] = 1;
+
+    for(int i = x - 1; i >= 0; i --){
+        for(int j = x - 1; j >= 0; j --){
+
+            int num = 0;
+            num = (num + p1 * p2 % mod * f[i + 1][j + 1]) % mod;
+            num = (num + p1 * q2 % mod * f[i + 1][j]) % mod;
+            num = (num + q1 * p2 % mod * f[i][j + 1]) % mod;
+            
+            f[i][j] = num * inv_denom % mod;
+        }
+    }
+    cout << f[0][0] << endl;
+    return ;
+}
+//============================================================================================================================================
+/*
+https://www.luogu.com.cn/problem/P4316
+*/
+
+const int N = 100000 + 100;
+int n, m;
+vector<PII> adj[N];
+double p[N], dist[N];
+int deg[N];
+
+void solve(){
+    
+    cin >> n >> m;
+    for(int i = 1; i <= m; i ++){
+        int u, v, w; cin >> u >> v >> w;
+        adj[u].pb({v, w});
+        deg[v] ++;
+    }
+
+    queue<int> q;
+    q.push(1);
+
+    p[1] = 1.0;
+    dist[1] = 0.0;
+
+    while(q.size()){
+        int u = q.front(); q.pop();
+        int fm = sz(adj[u]);
+        
+        for(auto [v, w] : adj[u]){
+            if(-- deg[v] == 0) q.push(v);
+
+            p[v] += p[u] * 1.0 / fm;
+            dist[v] += dist[u] * 1.0 / fm + w * (p[u] * 1.0 / fm);
+        }
+    }
+    cout << fixed << setprecision(2) << dist[n] << endl;
+    return ;
+}
+//============================================================================================================================================
+/*
+https://codeforces.com/problemset/problem/148/D
+*/
+
+const int N = 1000 + 100;
+double f[N][N];
+
+
+double dfs(int n, int m){
+    if(n <= 0) return 0;
+    if(m <= 0) return 1;
+    if(f[n][m] != -1) return f[n][m];
+
+    double ans = n * 1.0 / (n + m);
+
+    if(m >= 2){
+        double p = m * 1.0 / (n + m);
+        p *= (m - 1) * 1.0 / (n + m - 1);
+
+        if(m >= 3) ans += p * (m - 2) * 1.0 / (n + m - 2) * dfs(n, m - 3);
+        if(n >= 1) ans += p * n * 1.0 / (n + m - 2) * dfs(n - 1, m - 2);
+    }
+    return f[n][m] = ans;
+}
+void solve(){
+    
+
+    int n, m; cin >> n >> m;
+
+    for(int i = 0; i <= n; i ++){
+        for(int j = 0; j <= m; j ++) f[i][j] = -1;
+    }
+    cout << fixed << setprecision(9) << dfs(n, m) << endl;        
+    return ;
+}
+//============================================================================================================================================
+/*
+https://codeforces.com/contest/148/problem/A
+*/
+
+void solve(){
+    
+    int ans = 0;
+    int a, b, c, d, n; cin >> a >> b >> c >> d >> n;
+    for(int i = 1; i <= n; i ++){
+        if(i % a && i % b && i % c && i % d) continue;
+        ans ++;
+    }
+    cout << ans << endl;
+    return ;
+}
+//============================================================================================================================================
+/*
+https://codeforces.com/contest/148/problem/B
+*/
+
+void solve(){
+    
+    double vp, vd, t, f, c; cin >> vp >> vd >> t >> f >> c;
+
+    int ans = 0;
+    double pos = vp * t;
+
+    if(pos >= c || vp >= vd){
+        cout << 0 << endl;
+        return ;
+    }
+
+    while(1){
+        if(pos >= c) break;
+        double x = pos * 1.0 / (vd - vp);
+        pos += x * vp;
+        if(pos >= c) break;
+        ans ++;
+        pos += ((pos / vd) + f) * vp;
+    }
+    cout << ans << endl;
+    return ;
+}
+//============================================================================================================================================
+/*
+https://codeforces.com/contest/148/problem/C
+*/
+
+void solve(){
+    
+    int n, ca, cb; cin >> n >> ca >> cb;
+    if(n == 1){
+        cout << 1 << endl;
+        return ;
+    }
+
+    if(cb == 0){
+        if(ca == n - 1){
+            cout << -1 << endl;
+            return ;
+        }
+        vector<int> ans(n + 10);
+        ans[1] = 100;
+        ans[2] = 100;
+        for(int i = 3; i <= n; i ++){
+            if(ca) ans[i] = ans[i - 1] + 1, ca --;
+            else ans[i] = ans[i - 1];
+        }
+        for(int i = 1; i <= n; i ++) cout << ans[i] << " ";
+        cout << endl;
+        return;
+    }
+    vector<int> a(n + 10);
+    int total_sum = 0;
+    for(int i = 1; i <= n; i ++){
+        if(i == 1){
+            a[i] = 1;
+            total_sum += a[i];
+        }
+        else{
+            if(cb) a[i] = total_sum + 1, cb --;
+            else if(ca) a[i] = a[i - 1] + 1, ca --;
+            else a[i] = a[i - 1];
+            total_sum += a[i];
+        }
+        if(a[i] > 50000){
+            cout << -1 << endl;
+            return ;
+        }
+    }
+
+    for(int i = 1; i <= n; i ++) cout << a[i] << " ";
+    cout << endl;
+    return ;
+}
+//============================================================================================================================================
+/*
+https://codeforces.com/contest/148/problem/E
+*/
+
+void solve(){
+    
+    int n, m; cin >> n >> m;
+    vector<int> dp(m + 10);
+    
+    for(int i = 1; i <= n; i ++){
+        int k; cin >> k;
+        vector<int> a(k + 10), f(k + 10), pre(k + 10), suf(k + 10);
+        for(int i = 1; i <= k; i ++) cin >> a[i];
+        for(int i = 1; i <= k; i ++) pre[i] = pre[i - 1] + a[i];
+        for(int i = k; i >= 1; i --) suf[i] = suf[i + 1] + a[i];
+
+        for(int len = 0; len <= k; len ++){
+            for(int l = 1; l <= k - len + 1; l ++){
+                int r = l + len - 1;
+                int res_len = k - len;
+                // cout << len << " " << l << ' ' << r << " " << res_len << " " << pre[l - 1] + suf[r + 1] << endl;
+                f[res_len] = max(f[res_len], pre[l - 1] + suf[r + 1]);
+            }
+        }
+
+        for(int j = m; j >= 1; j --){
+            for(int z = 1; z <= k; z ++){
+                if(j >= z) dp[j] = max(dp[j], dp[j - z] + f[z]);
+            }
+        }
+    }
+    
+    cout << dp[m] << endl;
+    return ;
+}
+//============================================================================================================================================
