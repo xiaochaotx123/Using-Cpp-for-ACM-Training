@@ -1,0 +1,352 @@
+//============================================================================================================================================
+/*
+https://www.luogu.com.cn/problem/U41492
+*/
+#include<bits/stdc++.h>
+using namespace std;
+
+const int N = 100000 + 100;
+vector<int> adj[N];
+
+int n, a[N];
+int color[N], cnt[N];
+int L[N], R[N], totdfn, node[N];
+int son[N], sz[N];
+int ans[N], totcolor;
+
+void add(int u){
+    if(!cnt[color[u]]) totcolor ++;
+    cnt[color[u]] ++;
+}
+void del(int u){
+    cnt[color[u]] --;
+    if(!cnt[color[u]]) totcolor --;
+}
+
+void dfs_son(int u, int fa){
+    sz[u] = 1;
+    L[u] = ++ totdfn;
+    node[totdfn] = u;
+    
+    for(int v : adj[u]){
+        if(v == fa || v == son[u]) continue;
+        dfs_son(v, u);
+        sz[u] += sz[v];
+        if(!son[u] || sz[v] > sz[son[u]]) son[u] = v;
+    }
+    R[u] = totdfn;
+}
+
+void dfs_ans(int u, int fa, bool keep){
+
+    for(int v : adj[u]){
+        if(v == fa || v == son[u]) continue;
+        dfs_ans(v, u, false);
+    }
+
+    if(son[u]) dfs_ans(son[u], u, true);
+
+    for(int v : adj[u]){
+        if(v == fa || v == son[u]) continue;
+        for(int i = L[v]; i <= R[v]; i ++) add(node[i]);
+    }
+
+    add(u);
+    ans[u] = totcolor;
+    
+    if(!keep){
+        for(int i = L[u]; i <= R[u]; i ++) del(node[i]);
+    }
+}
+
+int main(){
+
+    cin >> n;
+    for(int i = 1; i <= n - 1; i ++){
+        int u, v; cin >> u >> v;
+        adj[u].push_back(v);
+        adj[v].push_back(u);
+    }
+
+    for(int i = 1; i <= n; i ++) cin >> color[i];
+
+    dfs_son(1, -1);
+    dfs_ans(1, -1, false);
+
+    int q; cin >> q;
+    while(q --){
+        int x; cin >> x;
+        cout << ans[x] << endl;
+    }
+    return 0;
+}
+//============================================================================================================================================
+/*
+https://www.luogu.com.cn/problem/P1083
+*/
+#include<bits/stdc++.h>
+using namespace std;
+
+
+#define int long long
+const int N = 1000000 + 100;
+
+struct Node{
+    int l, r;
+    int min_num, flag;
+}tr[4 * N];
+
+int n, m, a[N];
+
+void push_up(int u){
+    tr[u].min_num = min(tr[u << 1].min_num, tr[u << 1 | 1].min_num);
+}
+void push_down(int u){
+    if(tr[u].flag){
+        int flag = tr[u].flag;
+
+        tr[u << 1].min_num -= flag;
+        tr[u << 1].flag += flag;
+        tr[u << 1 | 1].min_num -= flag;
+        tr[u << 1 | 1].flag += flag;
+        tr[u].flag = 0;
+    }
+}
+
+void build(int u, int l, int r){
+    if(l == r){
+        tr[u] = {l, r, a[l], 0};
+        return ;
+    }
+    else{
+        tr[u] = {l, r, 0, 0};
+        int mid = (tr[u].l + tr[u].r) >> 1;
+        build(u << 1, l, mid);
+        build(u << 1 | 1, mid + 1, r);
+
+        push_up(u);
+    }
+}
+
+void modify(int u, int l, int r, int x){
+    if(l <= tr[u].l && tr[u].r <= r){
+        tr[u].min_num -= x;
+        tr[u].flag += x;
+        return ;
+    }
+    else{
+        push_down(u);
+        int mid = (tr[u].l + tr[u].r) >> 1;
+        if(l <= mid) modify(u << 1, l, r, x);
+        if(r > mid) modify(u << 1 | 1, l, r, x);
+        push_up(u);
+    }
+}
+
+signed main(){
+
+    cin >> n >> m;
+    for(int i = 1; i <= n; i ++) cin >> a[i];
+    build(1, 1, n);
+
+    vector<pair<int, pair<int, int> > > b(m + 10);
+    for(int i = 1; i <= m; i ++){
+        cin >> b[i].first >> b[i].second.first >> b[i].second.second;
+    }
+
+    for(int i = 1; i <= m; i ++){
+        int x = b[i].first;
+        int l = b[i].second.first, r = b[i].second.second;
+        modify(1, l, r, x);
+        int min_num = tr[1].min_num;
+
+        if(min_num < 0){
+            cout << -1 << endl;
+            cout << i << endl;
+            return 0;
+        }
+    }
+
+    cout << 0 << endl;
+    return 0;
+}
+//============================================================================================================================================
+/*
+https://codeforces.com/problemset/problem/371/C
+*/
+#include<bits/stdc++.h>
+using namespace std;
+
+#define int long long
+
+int cb, cs, cc;
+int nb, ns, nc;
+int pb, ps, pc;
+int n;
+
+bool check(int x){
+    int cntb = x * cb, cnts = x * cs, cntc = x * cc;
+    int cost = 0;
+    if(cntb > nb) cost += (cntb - nb) * pb;
+    if(cnts > ns) cost += (cnts - ns) * ps;
+    if(cntc > nc) cost += (cntc - nc) * pc;
+    
+    if(cost <= n) return true;
+    return false;
+}
+
+signed main(){
+
+    string s; cin >> s;
+    for(char x : s){
+        if(x == 'B') cb ++;
+        else if(x == 'S') cs ++;
+        else cc ++;
+    }
+
+    cin >> nb >> ns >> nc;
+    cin >> pb >> ps >> pc;
+    cin >> n;
+
+    int l = 0, r = 1000000000000000, ans = 0;
+    while(l <= r){
+        int mid = (l + r) / 2;
+        if(check(mid)){
+            ans = mid;
+            l = mid + 1;
+        }
+        else r = mid - 1;
+    }
+
+    cout << ans << endl;
+    return 0;
+}
+//============================================================================================================================================
+/*
+https://codeforces.com/problemset/problem/607/B
+*/
+#include<bits/stdc++.h>
+using namespace std;
+
+const int N = 500 + 100;
+const int inf = 1000000000;
+int dp[N][N];
+int n;
+int a[N];
+
+int main(){
+
+    ios::sync_with_stdio(false);cin.tie(NULL);cout.tie(NULL);
+
+    cin >> n;
+    for(int i = 1; i <= n; i ++) cin >> a[i];
+    for(int i = 1; i <= n; i ++){
+        for(int j = 1; j <= n; j ++){
+            dp[i][j] = inf;
+        }
+    }
+
+    for(int i = 1; i <= n; i ++) dp[i][i] = 1;
+
+    for(int len = 2; len <= n; len ++){
+        for(int l = 1; l + len - 1 <= n; l ++){
+            int r = l + len - 1;
+            if(a[l] == a[r]){
+                if(len <= 3) dp[l][r] = 1;
+                else dp[l][r] = dp[l + 1][r - 1];
+            }
+            
+            for(int k = l; k <= r - 1; k ++){
+                dp[l][r] = min(dp[l][r], dp[l][k] + dp[k + 1][r]);
+            }
+        }
+    }
+    
+    cout << dp[1][n] << endl;
+    return 0;
+}
+//============================================================================================================================================
+/*
+https://codeforces.com/problemset/problem/380/C
+*/
+
+#include<bits/stdc++.h>
+using namespace std;
+
+
+const int N = 1000000 + 100;
+
+string s; 
+
+struct Node{
+    int l, r;
+    int cnt;
+    int cntl, cntr;
+}tr[4 * N];
+
+void push_up(int u){
+    tr[u].cnt = (tr[u << 1].cnt + tr[u << 1 | 1].cnt);
+    int now_cnt = min(tr[u << 1].cntl, tr[u << 1 | 1].cntr);
+    tr[u].cnt += now_cnt;
+
+    tr[u].cntl = tr[u << 1].cntl - now_cnt + tr[u << 1 | 1].cntl;
+    tr[u].cntr = tr[u << 1].cntr + tr[u << 1 | 1].cntr - now_cnt;
+}
+
+void build(int u, int l, int r){
+    if(l == r){
+        tr[u] = {l, r, 0, 0, 0};
+        if(s[l] == '(') tr[u].cntl = 1;
+        else tr[u].cntr = 1;
+        return ;
+    }
+    else{
+        tr[u] = {l, r, 0, 0, 0};
+        int mid = (tr[u].l + tr[u].r) >> 1;
+        build(u << 1, l, mid);
+        build(u << 1 | 1, mid + 1, r);
+
+        push_up(u);
+    }
+}
+
+
+Node query(int u, int l, int r){
+    if(l <= tr[u].l && tr[u].r <= r) return tr[u];
+    else{
+
+        int mid = (tr[u].l + tr[u].r) >> 1;
+
+        Node left = {-1, -1, 0, 0, 0}, right = {-1, -1, 0, 0, 0};
+        if(l <= mid) left = query(u << 1, l, r);
+        if(r > mid) right = query(u << 1 | 1, l, r);
+        if(left.l == -1) return right;
+        if(right.l == -1) return left;
+        
+        Node now = {left.l, right.r, 0, 0, 0};
+        now.cnt = left.cnt + right.cnt;
+        int now_cnt = min(left.cntl, right.cntr);
+        now.cnt += now_cnt;
+        now.cntl = left.cntl + right.cntl - now_cnt;
+        now.cntr = left.cntr + right.cntr - now_cnt;
+ 
+        return now;
+    }
+}
+
+int main(){
+
+    cin >> s;
+    int n = (int)s.size();
+    s = " " + s;
+
+    build(1, 1, n);
+
+    int q; cin >> q;
+    while(q --){
+        int l, r; cin >> l >> r;
+        Node node = query(1, l, r);
+        cout << 2 * node.cnt << endl;
+    }
+    return 0;
+}
